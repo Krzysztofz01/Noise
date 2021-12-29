@@ -11,7 +11,7 @@ namespace Noise.Core.Encryption
         private const bool _useOAEPPadding = false;
         private const int _keyLength = 2048;
 
-        private static readonly RSACryptoServiceProvider _rsa = new(_keyLength);
+        private readonly RSACryptoServiceProvider _rsa = new(_keyLength);
 
         private readonly RSAParameters _privateKey;
         private readonly RSAParameters _publicKey;
@@ -55,9 +55,17 @@ namespace Noise.Core.Encryption
             _rsa.ImportParameters(_privateKey);
             
             var dataBytes = Convert.FromBase64String(cypherData);
-            var plainText = _rsa.Decrypt(dataBytes, _useOAEPPadding);
 
-            return Encoding.Unicode.GetString(plainText);
+            try
+            {
+                var plainText = _rsa.Decrypt(dataBytes, _useOAEPPadding);
+
+                return Encoding.Unicode.GetString(plainText);
+            }
+            catch(CryptographicException)
+            {
+                return null;
+            }
         }
 
         public static string Encrypt(string plainData, string xmlSerializedPublicKey)

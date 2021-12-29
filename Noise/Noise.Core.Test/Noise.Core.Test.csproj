@@ -19,4 +19,8 @@
     </PackageReference>
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\Noise.Core\Noise.Core.csproj" />
+  </ItemGroup>
+
 </Project>
