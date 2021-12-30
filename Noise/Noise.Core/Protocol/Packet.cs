@@ -7,7 +7,7 @@ namespace Noise.Core.Protocol
 {
     public class Packet : IPacket
     {
-        private const Int32 _minimalPossibleSize = 6;
+        private const Int32 _minimalPossibleSize = 5;
 
         public PacketType Type { get; private set; }
         public string Payload { get; private set; }
@@ -19,7 +19,7 @@ namespace Noise.Core.Protocol
 
             Size.ToLowEndianByteBuffer().CopyTo(buffer, 0);
             ((Int32)Type).ToLowEndianByteBuffer().CopyTo(buffer, 4);
-            Encoding.Unicode.GetBytes(Payload).CopyTo(buffer, 8);
+            Encoding.ASCII.GetBytes(Payload).CopyTo(buffer, 8);
 
             return buffer;
         }
@@ -48,7 +48,7 @@ namespace Noise.Core.Protocol
                 var packet = new Packet
                 {
                     Type = (PacketType)buffer.ToInt32(4),
-                    Payload = Encoding.Unicode.GetString(buffer, 8, (length - _minimalPossibleSize))
+                    Payload = Encoding.ASCII.GetString(buffer, 8, (length - _minimalPossibleSize))
                 };
 
                 if (packet.Size != length)
