@@ -1,33 +1,62 @@
-﻿using System;
+﻿using Noise.Core.Abstraction;
+using Noise.Core.Extensions;
+using System;
 using System.Text;
 
 namespace Noise.Core.Protocol
 {
-    public abstract class Packet
+    public class Packet : IPacket
     {
-        public abstract string Digest { get; }
-        public string Content { get; private set; }
+        private const Int32 _minimalPossibleSize = 6;
 
-        protected Packet()
+        public PacketType Type { get; private set; }
+        public string Payload { get; private set; }
+        public Int32 Size => Payload.Length + _minimalPossibleSize;
+
+        public byte[] GetBytes()
         {
-            Content = string.Empty;
+            byte[] buffer = new byte[Size + 4];
+
+            Size.ToLowEndianByteBuffer().CopyTo(buffer, 0);
+            ((Int32)Type).ToLowEndianByteBuffer().CopyTo(buffer, 4);
+            Encoding.Unicode.GetBytes(Payload).CopyTo(buffer, 8);
+
+            return buffer;
         }
 
-        protected void SetContent(string content)
+        private Packet() { }
+        public static class Factory
         {
-            int contentSizeInBytes = Encoding.UTF8.GetByteCount(content);
+            public static Packet FromParameters(PacketType type, string payload)
+            {
+                var packet = new Packet
+                {
+                    Type = type,
+                    Payload = payload ?? string.Empty
+                };
 
-            if (contentSizeInBytes > Constants.PacketContentMaxSize)
-                throw new ArgumentOutOfRangeException(nameof(content), "The content size is to big.");
+                return packet;
+            }
 
-            Content = content;
+            public static Packet FromBuffer(byte[] buffer)
+            {
+                if (buffer.Length < _minimalPossibleSize)
+                    throw new ArgumentException("Invalid buffer size. The packet may be corrupted.", nameof(buffer));
+
+                Int32 length = buffer.ToInt32(0);
+
+                var packet = new Packet
+                {
+                    Type = (PacketType)buffer.ToInt32(4),
+                    Payload = Encoding.Unicode.GetString(buffer, 8, (length - _minimalPossibleSize))
+                };
+
+                if (packet.Size != length)
+                    throw new ArithmeticException("Invlid packet size after buffer resolving. The packet may be corrupted.");
+
+                return packet;
+            }
         }
 
-        public virtual byte[] EncodePacket()
-        {
-            string payload = $"{Digest}_{Content}";
-
-            return Encoding.UTF8.GetBytes(payload);
-        }
     }
 }
