@@ -4,13 +4,13 @@ using System.Threading.Tasks;
 
 namespace Noise.Core.Abstraction
 {
-    public interface INoiseClient : IDisposable, IAsyncDisposable
+    public interface INoiseClient : IDisposable
     {
         bool Connected { get; }
 
         Task SendPacketAsync(IPacket packet);
         Task<Packet> ReceivePacketAsync();
-        Task<bool> ConnectAsync(string peer);
+        public Task<bool> ConnectAsync(string peerIpAddress);
 
         void Disconnect();
     }

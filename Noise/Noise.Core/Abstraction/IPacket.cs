@@ -2,5 +2,6 @@
 {
     public interface IPacket
     {
+        byte[] GetBytes();
     }
 }
