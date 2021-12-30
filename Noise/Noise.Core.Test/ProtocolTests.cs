@@ -1,4 +1,6 @@
 ﻿using Noise.Core.Protocol;
+using System;
+using System.Text;
 using Xunit;
 
 namespace Noise.Core.Test
@@ -53,6 +55,24 @@ namespace Noise.Core.Test
             Assert.Equal(type, recreatedPacket.Type);
             Assert.Equal(payload, recreatedPacket.Payload);
             Assert.Equal(packet.Size, recreatedPacket.Size);
+        }
+
+        [Fact]
+        public void PacketOutOfSizeLimitsShouldThrowAnException()
+        {
+            var type = PacketType.MESSAGE;
+
+            var payloadStringBuilder = new StringBuilder(string.Empty);
+
+            for (int i=0; i < Constants.MaximalPacketBytesSize + 1; i++)
+            {
+                payloadStringBuilder.Append('A');
+            }
+
+            Assert.Throws<ArgumentException>(() =>
+            {
+                Packet.Factory.FromParameters(type, payloadStringBuilder.ToString());
+            });
         }
     }
 }

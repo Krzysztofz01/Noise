@@ -24,6 +24,12 @@ namespace Noise.Core.Protocol
             return buffer;
         }
 
+        private static void ValidatePacketSize(Int32 size)
+        {
+            if (size + 4 > Constants.MaximalPacketBytesSize)
+                throw new ArgumentException("The given arguments created a packet that is outside the size limits.");
+        }
+
         private Packet() { }
         public static class Factory
         {
@@ -34,6 +40,8 @@ namespace Noise.Core.Protocol
                     Type = type,
                     Payload = payload ?? string.Empty
                 };
+
+                ValidatePacketSize(packet.Size);
 
                 return packet;
             }
@@ -53,6 +61,8 @@ namespace Noise.Core.Protocol
 
                 if (packet.Size != length)
                     throw new ArithmeticException("Invlid packet size after buffer resolving. The packet may be corrupted.");
+
+                ValidatePacketSize(packet.Size);
 
                 return packet;
             }
