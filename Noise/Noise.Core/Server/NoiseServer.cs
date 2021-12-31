@@ -1,4 +1,5 @@
 ﻿using Noise.Core.Abstraction;
+using Noise.Core.Events;
 using Noise.Core.Protocol;
 using System;
 using System.Net;
@@ -10,10 +11,15 @@ namespace Noise.Core.Server
 {
     public class NoiseServer : INoiseServer
     {
-        private bool verboseMode = false;
-        private bool disposed = false;
+        private bool _disposed = false;
 
         private TcpListener tcpListener;
+
+        public event EventHandler<ClientDisconnectedEventsArgs> OnClientDisconnected;
+        public event EventHandler<PacketReceivedEventsArgs> OnMessageReceived;
+        public event EventHandler<PacketReceivedEventsArgs> OnPingReceived;
+        public event EventHandler<PacketReceivedEventsArgs> OnKeyReceived;
+        public event EventHandler<PacketReceivedEventsArgs> OnDiscoveryReceived;
 
         public NoiseServer() { }
 
@@ -22,7 +28,7 @@ namespace Noise.Core.Server
             if (tcpListener is not null)
             {
                 tcpListener.Stop();
-                disposed = true;
+                _disposed = true;
                 tcpListener = null;
             }
 
@@ -36,7 +42,7 @@ namespace Noise.Core.Server
 
             cancellationToken.Register(tcpListener.Stop);
 
-            while (!cancellationToken.IsCancellationRequested && !disposed)
+            while (!cancellationToken.IsCancellationRequested && !_disposed)
             {
                 try
                 {
@@ -56,11 +62,12 @@ namespace Noise.Core.Server
             }
         }
 
+        #pragma warning disable CS1998 // Async method lacks 'await' operators and will run synchronously
         private async Task HandleClient(TcpClient client, CancellationToken ct)
+        #pragma warning restore CS1998 // Async method lacks 'await' operators and will run synchronously
         {
-            while (client.Client.Connected && !ct.IsCancellationRequested && !disposed)
+            while (client.Client.Connected && !ct.IsCancellationRequested && !_disposed)
             {
-                IPacket packet;
                 try
                 {
                     var networkStream = client.GetStream();
@@ -76,33 +83,38 @@ namespace Noise.Core.Server
                     var result = new byte[bytes];
                     Array.Copy(buffer, 0, result, 0, bytes);
 
-                    packet = Packet.Factory.FromBuffer(result);
+                    var packet = Packet.Factory.FromBuffer(result);
+
+                    var eventArgs = new PacketReceivedEventsArgs
+                    {
+                        Client = client,
+                        Packet = packet
+                    };
+
+                    switch (packet.Type)
+                    {
+                        case PacketType.PING: OnPingReceived?.Invoke(this, eventArgs); break;
+                        case PacketType.MESSAGE: OnMessageReceived?.Invoke(this, eventArgs); break;
+                        case PacketType.KEY: OnKeyReceived?.Invoke(this, eventArgs); break;
+                        case PacketType.DISCOVERY: OnDiscoveryReceived?.Invoke(this, eventArgs); break;
+
+                        default: throw new ArgumentOutOfRangeException(nameof(packet), "Invalid packet type. The packet may be corrupted.");
+                    }
                 }
                 catch
                 {
                     if (!client.Client.Connected)
                     {
-                        //TODO: OnClientDisconnect handle
+                        OnClientDisconnected?.Invoke(this, new ClientDisconnectedEventsArgs { Endpoint = client.Client.LocalEndPoint });
+                        return;
                     }
-                    else
-                    {
-                        throw;
-                    }
-                }
 
-                //TODO: Handle packet, packet handler service
+                    throw;
+                }
             }
         }
 
-        private void Log(string log) => Console.WriteLine(log);
-        private void Log(string log, Exception ex) => Console.WriteLine($"{log} - {ex.Message}");
-
-        public void SetVerboseMode(bool verbose)
-        {
-            if (tcpListener is not null)
-                throw new InvalidOperationException("Verbose mode can not be changed if the TCP listener has an instance.");
-
-            verboseMode = verbose;
-        }
+        private static void Log(string log) => Console.WriteLine(log);
+        private static void Log(string log, Exception ex) => Console.WriteLine($"{log} - {ex.Message}");
     }
 }
