@@ -12,6 +12,7 @@ namespace Noise.Core.Protocol
         public PacketType Type { get; private set; }
         public string Payload { get; private set; }
         public Int32 Size => Payload.Length + _minimalPossibleSize;
+        public Payload PayloadDeserialized => Protocol.Payload.Factory.FromString(Payload);
 
         public byte[] GetBytes()
         {
@@ -33,12 +34,12 @@ namespace Noise.Core.Protocol
         private Packet() { }
         public static class Factory
         {
-            public static Packet FromParameters(PacketType type, string payload)
+            public static Packet FromParameters(PacketType type, Payload payload)
             {
                 var packet = new Packet
                 {
                     Type = type,
-                    Payload = payload ?? string.Empty
+                    Payload = payload.ToString()
                 };
 
                 ValidatePacketSize(packet.Size);
@@ -67,6 +68,5 @@ namespace Noise.Core.Protocol
                 return packet;
             }
         }
-
     }
 }
