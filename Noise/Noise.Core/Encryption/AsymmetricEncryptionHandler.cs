@@ -37,7 +37,8 @@ namespace Noise.Core.Encryption
             var xmlSerializer = new XmlSerializer(typeof(RSAParameters));
             xmlSerializer.Serialize(stringWriter, _publicKey);
 
-            return stringWriter.ToString();
+            var serializedPublicKey = stringWriter.ToString();
+            return ExtractPublicKeyFromXml(serializedPublicKey);
         }
 
         public string GetPrivateKey()
@@ -68,8 +69,10 @@ namespace Noise.Core.Encryption
             }
         }
 
-        public static string Encrypt(string plainData, string xmlSerializedPublicKey)
+        public static string Encrypt(string plainData, string publicKey)
         {
+            var xmlSerializedPublicKey = InsertPublicKeyIntoXml(publicKey);
+
             var xmlSerializer = new XmlSerializer(typeof(RSAParameters));
 
             using var stringReader = new StringReader(xmlSerializedPublicKey);
@@ -84,6 +87,20 @@ namespace Noise.Core.Encryption
             var cypherData = rsa.Encrypt(encodedData, _useOAEPPadding);
 
             return Convert.ToBase64String(cypherData);
+        }
+
+        private static string ExtractPublicKeyFromXml(string publicKeyXml)
+        {
+            const string targetTagOpen = "<Modulus>";
+            const string targetTagClosed = "</Modulus>";
+
+            return publicKeyXml.Substring(publicKeyXml.IndexOf(targetTagOpen) + targetTagOpen.Length,
+                publicKeyXml.IndexOf(targetTagClosed) - publicKeyXml.IndexOf(targetTagOpen) - targetTagOpen.Length);
+        }
+
+        private static string InsertPublicKeyIntoXml(string publicKey)
+        {
+            return $"<?xml version=\"1.0\" encoding=\"utf-16\"?><RSAParameters xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\"><Exponent>AQAB</Exponent><Modulus>{publicKey}</Modulus></RSAParameters>";
         }
     }
 }

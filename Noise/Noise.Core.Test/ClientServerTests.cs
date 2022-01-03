@@ -12,7 +12,7 @@ namespace Noise.Core.Test
     public class ClientServerTests
     {
         [Fact]
-        public async void ServerShouldReceiveAndHandleClientPackets()
+        public async void ServerShouldReceiveAndHandleClientPingPackets()
         {
             // Creating a new server instance and cancellation token
             using var noiseServer = new NoiseServer();
@@ -20,7 +20,7 @@ namespace Noise.Core.Test
 
             // Prepare test data
             var expectedPacketType = PacketType.PING;
-            var expectedPacketPayload = "Hello World!";
+            var expectedPacketPayload = Payload.Factory.Empty;
 
             // Create event handler method and asign it to the event
             noiseServer.OnPingReceived += packetReceiveEventHandler;
@@ -28,7 +28,7 @@ namespace Noise.Core.Test
             {
                 // Assert the incoming traffic
                 Assert.Equal(expectedPacketType, e.Packet.Type);
-                Assert.Equal(expectedPacketPayload, e.Packet.Payload);
+                Assert.Equal(expectedPacketPayload.ToString(), e.Packet.Payload);
             }
 
             // Set the server to listen on separate thread
@@ -39,7 +39,7 @@ namespace Noise.Core.Test
             await noiseClient.ConnectAsync(IPAddress.Loopback.ToString());
 
             // Prepare the packet and send it to the server via client
-            var packet = Packet.Factory.FromParameters(expectedPacketType, string.Empty);
+            var packet = Packet.Factory.FromParameters(expectedPacketType, expectedPacketPayload);
             await noiseClient.SendPacketAsync(packet);          
         }
     }

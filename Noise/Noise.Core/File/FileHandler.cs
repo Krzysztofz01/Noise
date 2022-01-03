@@ -1,30 +1,30 @@
 ﻿using Noise.Core.Models;
 using System;
-using System.Text.Json;
+using System.IO;
 using System.Threading.Tasks;
-using IO = System.IO;
 
 namespace Noise.Core.File
 {
     public class FileHandler
     {
-        private const string _privateKeyFileName = "private.noise";
-        private const string _peerDataFileName = "peer.noise";
+        private const string _peerConfigurationFileName = "peer.noise";
 
-        public bool PrivateKeyFileExists()
+        public static bool PeerConfigurationFileExists()
         {
-            var filePath = IO.Path.Combine(IO.Directory.GetCurrentDirectory(), _privateKeyFileName);
+            var filePath = Path.Combine(Directory.GetCurrentDirectory(), _peerConfigurationFileName);
 
-            return IO.File.Exists(filePath);
+            return System.IO.File.Exists(filePath);
         }
 
-        public async Task<bool> SavePrivateKeyToFileAsync(string privateKeyFile)
+        public static async Task<bool> SavePeerConfigurationFile(PeerConfiguration peerConfiguration)
         {
             try
             {
-                var filePath = IO.Path.Combine(IO.Directory.GetCurrentDirectory(), _privateKeyFileName);
+                var filePath = Path.Combine(Directory.GetCurrentDirectory(), _peerConfigurationFileName);
 
-                await IO.File.WriteAllTextAsync(filePath, privateKeyFile);
+                var serializedPeerConfiguration = peerConfiguration.Serialize();
+
+                await System.IO.File.WriteAllTextAsync(filePath, serializedPeerConfiguration);
 
                 return true;
             }
@@ -34,38 +34,6 @@ namespace Noise.Core.File
             }
         }
 
-        public async Task<bool> SavePeerDataToFileAsync(PeerData peerData)
-        {
-            try
-            {
-                var filePath = IO.Path.Combine(IO.Directory.GetCurrentDirectory(), _peerDataFileName);
 
-                var serializedPeerData = JsonSerializer.Serialize(peerData);
-
-                await IO.File.WriteAllTextAsync(filePath, serializedPeerData);
-
-                return true;
-            }
-            catch (Exception)
-            {
-                return false;
-            }
-        }
-
-        public string GetPrivateKeyFromFile()
-        {
-            var filePath = IO.Path.Combine(IO.Directory.GetCurrentDirectory(), _privateKeyFileName);
-
-            return IO.File.ReadAllText(filePath);
-        }
-
-        public PeerData GetPeerDataFromFile()
-        {
-            var filePath = IO.Path.Combine(IO.Directory.GetCurrentDirectory(), _peerDataFileName);
-
-            var serializedPeerData = IO.File.ReadAllText(filePath);
-
-            return JsonSerializer.Deserialize<PeerData>(serializedPeerData);
-        }
     }
 }
