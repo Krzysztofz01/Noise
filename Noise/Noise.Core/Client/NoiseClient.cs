@@ -42,25 +42,6 @@ namespace Noise.Core.Client
             GC.SuppressFinalize(this);
         }
 
-        public async Task<Packet> ReceivePacketAsync()
-        {
-            var networkStream = tcpClient.GetStream();
-
-            var buffer = new byte[Constants.MaximalPacketBytesSize];
-            int bytes;
-
-            do
-            {
-                bytes = await networkStream.ReadAsync(buffer, 0, buffer.Length);
-            } while (bytes == 0);
-
-            var result = new byte[bytes];
-            Array.Copy(buffer, 0, result, 0, bytes);
-
-
-            return Packet.Factory.FromBuffer(result);
-        }
-
         public async Task SendPacketAsync(IPacket packet)
         {
             var networkStream = tcpClient.GetStream();
