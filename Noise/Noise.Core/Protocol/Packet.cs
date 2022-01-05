@@ -22,9 +22,6 @@ namespace Noise.Core.Protocol
             return buffer;
         }
 
-        public Payload PayloadDeserialized =>
-            Protocol.Payload.Factory.Deserialize(Payload, Type == PacketType.MESSAGE);
-
         private static void ValidatePacketSize(Int32 size)
         {
             if (size + 4 > Constants.MaximalPacketBytesSize)

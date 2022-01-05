@@ -83,10 +83,12 @@ namespace Noise.Core.Test
 
             int expectedSize = Constants.MinimalPacketBytesSize + Constants.PublicKeyStringSize + Constants.MinimalPayloadStringSize + payloadContent.Length;
 
+            var recreatedPayload = Payload.Factory.Deserialize(packet.Payload);
+
             Assert.NotNull(packet);
 
             Assert.Equal(type, packet.Type);
-            Assert.Equal(payloadContent, packet.PayloadDeserialized.Content);
+            Assert.Equal(payloadContent, recreatedPayload.Content);
 
             Assert.Equal(expectedSize, packet.Size);
         }
@@ -122,9 +124,10 @@ namespace Noise.Core.Test
             var packetBytes = packet.GetBytes();
 
             var recreatedPacket = Packet.Factory.FromBuffer(packetBytes);
+            var recreatedPayload = Payload.Factory.Deserialize(recreatedPacket.Payload);
 
             Assert.Equal(type, recreatedPacket.Type);
-            Assert.Equal(payloadContent, recreatedPacket.PayloadDeserialized.Content);
+            Assert.Equal(payloadContent, recreatedPayload.Content);
             Assert.Equal(packet.Size, recreatedPacket.Size);
         }
 
