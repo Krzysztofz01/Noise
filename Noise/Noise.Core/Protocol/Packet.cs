@@ -7,12 +7,9 @@ namespace Noise.Core.Protocol
 {
     public class Packet : IPacket
     {
-        private const Int32 _minimalPossibleSize = 5;
-
         public PacketType Type { get; private set; }
         public string Payload { get; private set; }
-        public Int32 Size => Payload.Length + _minimalPossibleSize;
-        public Payload PayloadDeserialized => Protocol.Payload.Factory.FromString(Payload);
+        public Int32 Size => Payload.Length + Constants.MinimalPacketBytesSize;
 
         public byte[] GetBytes()
         {
@@ -25,6 +22,9 @@ namespace Noise.Core.Protocol
             return buffer;
         }
 
+        public Payload PayloadDeserialized =>
+            Protocol.Payload.Factory.Deserialize(Payload, Type == PacketType.MESSAGE);
+
         private static void ValidatePacketSize(Int32 size)
         {
             if (size + 4 > Constants.MaximalPacketBytesSize)
@@ -34,12 +34,12 @@ namespace Noise.Core.Protocol
         private Packet() { }
         public static class Factory
         {
-            public static Packet FromParameters(PacketType type, Payload payload)
+            public static Packet FromParameters(PacketType type, string encryptedSerializedPayload)
             {
                 var packet = new Packet
                 {
                     Type = type,
-                    Payload = payload.ToString()
+                    Payload = encryptedSerializedPayload
                 };
 
                 ValidatePacketSize(packet.Size);
@@ -49,7 +49,7 @@ namespace Noise.Core.Protocol
 
             public static Packet FromBuffer(byte[] buffer)
             {
-                if (buffer.Length < _minimalPossibleSize)
+                if (buffer.Length < Constants.MinimalPacketBytesSize)
                     throw new ArgumentException("Invalid buffer size. The packet may be corrupted.", nameof(buffer));
 
                 Int32 length = buffer.ToInt32(0);
@@ -57,7 +57,7 @@ namespace Noise.Core.Protocol
                 var packet = new Packet
                 {
                     Type = (PacketType)buffer.ToInt32(4),
-                    Payload = Encoding.ASCII.GetString(buffer, 8, (length - _minimalPossibleSize))
+                    Payload = Encoding.ASCII.GetString(buffer, 8, (length - Constants.MinimalPacketBytesSize))
                 };
 
                 if (packet.Size != length)

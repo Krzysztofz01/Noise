@@ -8,7 +8,7 @@ namespace Noise.Core.Test
     public class ProtocolTests
     {
         [Fact]
-        public void PacketPayloadShouldCreateFromParameters()
+        public void PacketPayloadShouldCreateFromParametersWithPublicKey()
         {
             string publicKey = MockupPublicKey();
             string content = "Hello World!";
@@ -20,6 +20,29 @@ namespace Noise.Core.Test
         }
 
         [Fact]
+        public void PacketPayloadShouldCreateFromParametersWithoutPublicKey()
+        {
+            string content = "Hello World!";
+
+            var payload = Payload.Factory.FromParameters(content);
+
+            Assert.Equal(content, payload.Content);
+        }
+
+        [Fact]
+        public void PacketPayloadWithoutPublicKeyShouldThrowWhenKeyAccesed()
+        {
+            string content = "Hello World!";
+
+            var payload = Payload.Factory.FromParameters(content);
+
+            Assert.Throws<InvalidOperationException>(() =>
+            {
+                var publicKey = payload.PublicKey;
+            });
+        }
+
+        [Fact]
         public void PacketPayloadShouldSerializeAndDeserialize()
         {
             string publicKey = MockupPublicKey();
@@ -27,9 +50,9 @@ namespace Noise.Core.Test
 
             var payload = Payload.Factory.FromParameters(publicKey, content);
 
-            string serializedPayload = payload.ToString();
+            string serializedPayload = payload.Serialize();
 
-            var deserializedPayload = Payload.Factory.FromString(serializedPayload);
+            var deserializedPayload = Payload.Factory.Deserialize(serializedPayload);
 
             Assert.Equal(publicKey, deserializedPayload.PublicKey);
             Assert.Equal(content, deserializedPayload.Content);
@@ -50,13 +73,15 @@ namespace Noise.Core.Test
         [Fact]
         public void PacketShouldCreateFromParameters()
         {
-            var type = PacketType.MESSAGE;
+            var type = PacketType.PING;
+
+            var payloadKey = MockupPublicKey();
             var payloadContent = "Hello world!";
 
-            var payload = Payload.Factory.FromParameters(MockupPublicKey(), payloadContent);
-            var packet = Packet.Factory.FromParameters(type, payload);
+            var payload = Payload.Factory.FromParameters(payloadKey, payloadContent);
+            var packet = Packet.Factory.FromParameters(type, payload.Serialize());
 
-            int expectedSize = 4 + payloadContent.Length + Constants.PublicKeySize + 1;
+            int expectedSize = Constants.MinimalPacketBytesSize + Constants.PublicKeyStringSize + Constants.MinimalPayloadStringSize + payloadContent.Length;
 
             Assert.NotNull(packet);
 
@@ -69,13 +94,16 @@ namespace Noise.Core.Test
         [Fact]
         public void PacketShouldConvertToBytesBuffer()
         {
-            var type = PacketType.MESSAGE;
+            var type = PacketType.PING;
+
+            var payloadKey = MockupPublicKey();
             var payloadContent = "Hello world!";
 
-            var payload = Payload.Factory.FromParameters(MockupPublicKey(), payloadContent);
-            var packet = Packet.Factory.FromParameters(type, payload);
+            var payload = Payload.Factory.FromParameters(payloadKey, payloadContent);
 
-            int expectedPacketBytesLength = 4 + 4 + payloadContent.Length + Constants.PublicKeySize + 1;
+            var packet = Packet.Factory.FromParameters(type, payload.Serialize());
+
+            int expectedPacketBytesLength = 4 + 4 + payload.Content.Length + Constants.MinimalPayloadStringSize + Constants.PublicKeyStringSize + 1;
 
             var packetBytes = packet.GetBytes();
 
@@ -85,11 +113,11 @@ namespace Noise.Core.Test
         [Fact]
         public void PacketShouldConvertToBytesBufferAndBackToPacketInstance()
         {
-            var type = PacketType.MESSAGE;
+            var type = PacketType.PING;
             var payloadContent = "Hello world!";
 
             var payload = Payload.Factory.FromParameters(MockupPublicKey(), payloadContent);
-            var packet = Packet.Factory.FromParameters(type, payload);
+            var packet = Packet.Factory.FromParameters(type, payload.Serialize());
 
             var packetBytes = packet.GetBytes();
 
@@ -103,7 +131,7 @@ namespace Noise.Core.Test
         [Fact]
         public void PacketOutOfSizeLimitsShouldThrowAnException()
         {
-            var type = PacketType.MESSAGE;
+            var type = PacketType.PING;
 
             var payloadContentStringBuilder = new StringBuilder(string.Empty);
             for (int i=0; i < Constants.MaximalPacketBytesSize + 1; i++)
@@ -115,14 +143,14 @@ namespace Noise.Core.Test
 
             Assert.Throws<ArgumentException>(() =>
             {
-                Packet.Factory.FromParameters(type, payload);
+                Packet.Factory.FromParameters(type, payload.Serialize());
             });
         }
 
         private string MockupPublicKey()
         {
             StringBuilder sb = new(string.Empty);
-            for (int i = 0; i < Constants.PublicKeySize; i++) sb.Append('A');
+            for (int i = 0; i < Constants.PublicKeyStringSize; i++) sb.Append('A');
             return sb.ToString();
         }
     }
