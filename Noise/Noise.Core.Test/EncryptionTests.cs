@@ -1,7 +1,4 @@
 ﻿using Noise.Core.Encryption;
-using System.IO;
-using System.Security.Cryptography;
-using System.Xml.Serialization;
 using Xunit;
 
 namespace Noise.Core.Test
@@ -31,11 +28,7 @@ namespace Noise.Core.Test
             
             string cipher = AsymmetricEncryptionHandler.Encrypt(plainTextMessage, firstPublicKey);
 
-            var xmlSerializer = new XmlSerializer(typeof(RSAParameters));
-            using var stringReader = new StringReader(firstPrivateKey);
-            var rsaPrivateKeyParameter = (RSAParameters)xmlSerializer.Deserialize(stringReader);
-
-            var secondAeh = new AsymmetricEncryptionHandler(rsaPrivateKeyParameter);
+            var secondAeh = new AsymmetricEncryptionHandler(firstPrivateKey);
             string decryptedCipher = secondAeh.Decrypt(cipher);
 
             Assert.Equal(plainTextMessage, decryptedCipher);

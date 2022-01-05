@@ -22,8 +22,12 @@ namespace Noise.Core.Encryption
             _publicKey = _rsa.ExportParameters(false);
         }
 
-        public AsymmetricEncryptionHandler(RSAParameters privateRsaParameters)
+        public AsymmetricEncryptionHandler(string privateRsaParametersXml)
         {
+            var xmlSerializer = new XmlSerializer(typeof(RSAParameters));
+            using var stringReader = new StringReader(privateRsaParametersXml);
+            var privateRsaParameters = (RSAParameters)xmlSerializer.Deserialize(stringReader);
+
             _rsa.ImportParameters(privateRsaParameters);
 
             _privateKey = _rsa.ExportParameters(true);
