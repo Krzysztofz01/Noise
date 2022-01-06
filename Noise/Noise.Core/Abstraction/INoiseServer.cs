@@ -8,10 +8,9 @@ namespace Noise.Core.Abstraction
     public interface INoiseServer : IDisposable
     {
         event EventHandler<ClientDisconnectedEventsArgs> OnClientDisconnected;
-        event EventHandler<PacketReceivedEventsArgs> OnMessageReceived;
+        event EventHandler<PacketPairReceivedEventsArgs> OnMessageReceived;
         event EventHandler<PacketReceivedEventsArgs> OnPingReceived;
-        event EventHandler<PacketReceivedEventsArgs> OnKeyReceived;
-        event EventHandler<PacketReceivedEventsArgs> OnDiscoveryReceived;
+        event EventHandler<PacketPairReceivedEventsArgs> OnDiscoveryReceived;
 
         Task StartAsync(CancellationToken cancellationToken);
     }
