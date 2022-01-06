@@ -9,7 +9,7 @@ namespace Noise.Core.Encryption
     public class AsymmetricEncryptionHandler
     {
         private const bool _useOAEPPadding = false;
-        private const int _keyLength = 2048;
+        private const int _keyLength = 4096; //2048
 
         private readonly RSACryptoServiceProvider _rsa = new(_keyLength);
 

@@ -15,7 +15,7 @@ namespace Noise.Core.Protocol
         public const Int32 MinimalPayloadStringSize = 29;
         public const Int32 MinimalPayloadBytesSize = MinimalPayloadStringSize + NullTerminatorByteSize;
 
-        public const Int32 PublicKeyStringSize = 344;
+        public const Int32 PublicKeyStringSize = 684; //344
         public const Int32 PublicKeyBytesSize = PublicKeyStringSize + NullTerminatorByteSize;
     }
 }
