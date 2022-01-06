@@ -1,16 +1,47 @@
 ﻿using Noise.Core.Abstraction;
 using Noise.Core.Encryption;
+using Noise.Core.Models;
 using Noise.Core.Protocol;
 using System;
 using System.Collections.Generic;
+using System.Text.Json;
 
 namespace Noise.Core.Services
 {
     public class PacketService : IPacketService
     {
-        public IEnumerable<IPacket> CreateDiscoveryPackets(IEnumerable<string> endpoints, IEnumerable<string> publicKeys)
+        public IEnumerable<(IPacket keyPacket, IPacket discoveryPacket)> CreateDiscoveryPackets(IEnumerable<string> endpoints, IEnumerable<string> publicKeys)
         {
-            throw new NotImplementedException();
+            var discoveryData = new DiscoveryDataModel
+            {
+                Endpoints = endpoints,
+                PublicKeys = publicKeys
+            };
+
+            var serializedDiscoveryData = JsonSerializer.Serialize(discoveryData);
+
+            List<(IPacket keyPacket, IPacket discoveryPacket)> packetSets = new();
+            
+            foreach (var receiverPublicKey in publicKeys)
+            {
+                var discoveryPayload = Payload.Factory.FromParameters(serializedDiscoveryData);
+
+                var seh = new SymmetricEncryptionHandler();
+
+                var (cipher, key) = seh.Encrypt(discoveryPayload.Serialize());
+
+                var discoveryPacket = Packet.Factory.FromParameters(PacketType.DISCOVERY, cipher);
+
+                var discoveryKeyPayload = Payload.Factory.FromParameters(key);
+
+                var encryptedDiscoveryKeyPayload = AsymmetricEncryptionHandler.Encrypt(discoveryKeyPayload.Serialize(), receiverPublicKey);
+
+                var discoveryKeyPacket = Packet.Factory.FromParameters(PacketType.KEY, encryptedDiscoveryKeyPayload);
+
+                packetSets.Add((discoveryKeyPacket, discoveryPacket));
+            }
+
+            return packetSets;
         }
 
         public (IPacket keyPacket, IPacket messagePacket) CreateMessagePackets(string senderPublicKey, string receiverPublicKey, string message)
@@ -32,14 +63,40 @@ namespace Noise.Core.Services
             return (messageKeyPacket, messagePacket);
         }
 
-        public IPacket CreatePingPacket(IEnumerable<string> endpoints)
+        public IPacket CreatePingPacket()
         {
-            throw new NotImplementedException();
+            var payload = Payload.Factory.Empty;
+
+            return Packet.Factory.FromParameters(PacketType.PING, payload.Serialize());
         }
 
-        public IEnumerable<(string publicKey, string endpoint)> RetriveDiscoveryPacket(IPacket discoveryPacket)
+        public (IEnumerable<string> publicKeys, IEnumerable<string> endpoints) RetriveDiscoveryPacket(IPacket keyPacket, IPacket discoveryPacket, string privateKeyXml)
         {
-            throw new NotImplementedException();
+            var discoveryPacketParsed = (Packet)discoveryPacket;
+            if (discoveryPacketParsed.Type != PacketType.DISCOVERY)
+                throw new ArgumentException("The message packet is incorrect type.", nameof(discoveryPacket));
+
+            var keyPacketParsed = (Packet)keyPacket;
+            if (keyPacketParsed.Type != PacketType.KEY)
+                throw new ArgumentException("The message packet is incorrect type.", nameof(keyPacket));
+
+            var aeh = new AsymmetricEncryptionHandler(privateKeyXml);
+
+            var serializedDiscoveryKey = aeh.Decrypt(keyPacketParsed.Payload);
+            if (serializedDiscoveryKey is null) return (null, null);
+
+            var discoveryKey = Payload.Factory.Deserialize(serializedDiscoveryKey, false).Content;
+
+            var seh = new SymmetricEncryptionHandler();
+
+            var serializedDiscovery = seh.Decrypt(discoveryPacketParsed.Payload, discoveryKey);
+            if (serializedDiscovery is null) return (null, null);
+
+            var discovery = Payload.Factory.Deserialize(serializedDiscovery, false);
+
+            var discoveryData = JsonSerializer.Deserialize<DiscoveryDataModel>(discovery.Content);
+
+            return (discoveryData.PublicKeys, discoveryData.Endpoints);
         }
 
         public (string publicKey, string message) RetriveMessagePacket(IPacket keyPacket, IPacket messagePacket, string privateKeyXml)
