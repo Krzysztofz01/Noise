@@ -1,4 +1,4 @@
-﻿using Noise.Core.Models;
+﻿using Noise.Core.Peer;
 using System;
 using System.IO;
 using System.Threading.Tasks;

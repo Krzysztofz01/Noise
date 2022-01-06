@@ -1,6 +1,6 @@
 ﻿using Noise.Core.Abstraction;
 using Noise.Core.Events;
-using Noise.Core.Models;
+using Noise.Core.Peer;
 using Noise.Core.Protocol;
 using System;
 using System.Linq;
