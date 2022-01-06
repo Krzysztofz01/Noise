@@ -34,11 +34,16 @@ namespace Noise.Core.Test
         {
             string content = "Hello World!";
 
-            var payload = Payload.Factory.FromParameters(content);
+            var payloadWithoutValidation = Payload.Factory.FromParameters(null, content, false);
 
             Assert.Throws<InvalidOperationException>(() =>
             {
-                var publicKey = payload.PublicKey;
+                var publicKey = payloadWithoutValidation.PublicKey;
+            });
+
+            Assert.Throws<ArgumentException>(() =>
+            {
+                Payload.Factory.FromParameters(null, content, true);
             });
         }
 

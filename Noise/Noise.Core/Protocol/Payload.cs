@@ -7,10 +7,13 @@ namespace Noise.Core.Protocol
 {
     public class Payload
     {
+        [JsonIgnore]
+        private bool _publicKeyPresence;
+
         private readonly string _publicKey;
         public string PublicKey
         {
-            get => _publicKey.IsEmpty()
+            get => (_publicKeyPresence && _publicKey.IsEmpty())
                 ? throw new InvalidOperationException("This payload does not contain a public key. Make sure you perform operations on the correct type of packet.")
                 : _publicKey;
 
@@ -57,7 +60,9 @@ namespace Noise.Core.Protocol
                     IncludeFields = false
                 });
 
-                if (payload.PublicKey.IsEmpty() && validatePublicKeyPresence)
+                payload._publicKeyPresence = validatePublicKeyPresence;
+
+                if (payload.PublicKey.IsEmpty() && payload._publicKeyPresence)
                     throw new ArgumentException("The public key is required. Make sure to use correct valiation rules and packet type.");
 
                 return payload;
@@ -68,6 +73,7 @@ namespace Noise.Core.Protocol
                 return new Payload
                 {
                     PublicKey = null,
+                    _publicKeyPresence = false,
                     Content = content.IsEmpty() ? string.Empty : content
                 };
             }
@@ -77,12 +83,13 @@ namespace Noise.Core.Protocol
                 if (publicKey.IsEmpty() && validatePublicKeyPresence)
                     throw new ArgumentException("The public key is required. Make sure to use correct valiation rules and packet type.");
 
-                if (publicKey.Length != Constants.PublicKeyStringSize)
+                if (publicKey?.Length != Constants.PublicKeyStringSize && validatePublicKeyPresence)
                     throw new ArgumentException("The public key format is invalid.");
 
                 return new Payload
                 {
                     PublicKey = publicKey,
+                    _publicKeyPresence = true,
                     Content = content.IsEmpty() ? string.Empty : content
                 };
             }
