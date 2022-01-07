@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 
 namespace Noise.Core.Abstraction
@@ -8,7 +9,7 @@ namespace Noise.Core.Abstraction
         bool Connected { get; }
 
         Task SendPacketAsync(IPacket packet);
-        public Task<bool> ConnectAsync(string peerIpAddress);
+        Task SendPacketsAsync(IEnumerable<IPacket> packets);
 
         void Disconnect();
     }

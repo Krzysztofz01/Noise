@@ -24,7 +24,7 @@ namespace Noise.Core.Test
             // Mockup server dependencies
             var mockupOutput = new MockupOutput();
             var mockupPacketService = new PacketService();
-            var (mockupPeerConfigurationServer, publicKeyServer) = MockupPeerConfiguration();
+            var mockupPeerConfigurationServer = MockupPeerConfiguration();
 
             // Create server instance
             using var noiseServer = new NoiseServer(mockupOutput, mockupPacketService, mockupPeerConfigurationServer);
@@ -33,6 +33,8 @@ namespace Noise.Core.Test
             // Prepare test data
             var expectedPacketType = PacketType.PING;
             var expectedEndpoint = IPAddress.Loopback.ToString();
+            var expectedEndpointsList = new List<string> { "127.0.0.1" };
+            var expectedKeysList = new List<string> { mockupPeerConfigurationServer.PublicKey };
 
             // Intercept event in order to assert
             noiseServer.OnPingReceived += AssertionPingEventHandler;
@@ -46,13 +48,14 @@ namespace Noise.Core.Test
             _ = Task.Run(async () => await noiseServer.StartAsync(ct));
 
             // Create new client instance and connect it to the server
-            using var noiseClient = new NoiseClient();
-            await noiseClient.ConnectAsync(IPAddress.Loopback.ToString());
+            var mockupPeerConfigurationClient = MockupPeerConfiguration();
+            mockupPeerConfigurationClient.InsertEndpoints(expectedEndpointsList);
+            mockupPeerConfigurationClient.InsertKeys(expectedKeysList);
+            using var noiseClient = new NoiseClient(mockupPeerConfigurationClient);
 
             // Prepare the packet and send it to the server via client
             var pingPacket = mockupPacketService.CreatePingPacket();
             await noiseClient.SendPacketAsync(pingPacket);
-            noiseClient.Disconnect();
         }
 
         [Fact]
@@ -61,7 +64,7 @@ namespace Noise.Core.Test
             // Mockup server dependencies
             var mockupOutput = new MockupOutput();
             var mockupPacketService = new PacketService();
-            var (mockupPeerConfigurationServer, publicKeyServer) = MockupPeerConfiguration();
+            var mockupPeerConfigurationServer = MockupPeerConfiguration();
 
             // Create server instance
             using var noiseServer = new NoiseServer(mockupOutput, mockupPacketService, mockupPeerConfigurationServer);
@@ -70,33 +73,25 @@ namespace Noise.Core.Test
             // Prepare test data
             var expectedMessage = "New peers discovered!";
             var expectedEndpointsList = new List<string> { "127.0.0.1" };
-            var expectedKeysList = new List<string> { publicKeyServer };
+            var expectedKeysList = new List<string> { mockupPeerConfigurationServer.PublicKey };
 
             // Create a new thread for sever to listen
             _ = Task.Run(async () => await noiseServer.StartAsync(ct));
 
             // Create new client instance and connect it to the server
             var mockupPeerConfigurationClient = MockupPeerConfiguration();
-            using var noiseClient = new NoiseClient();
+            mockupPeerConfigurationClient.InsertEndpoints(expectedEndpointsList);
+            mockupPeerConfigurationClient.InsertKeys(expectedKeysList);
+            using var noiseClient = new NoiseClient(mockupPeerConfigurationClient);
 
             // Prepare the packet and send it to the server via client
             var discovery = mockupPacketService.CreateDiscoveryPackets(expectedEndpointsList, expectedKeysList);
-            
-            foreach(var endpoint in expectedEndpointsList)
+            foreach (var (keyPacket, discoveryPacket) in discovery)
             {
-                await noiseClient.ConnectAsync(endpoint);
-
-                foreach (var dsc in discovery)
-                {
-                    await noiseClient.SendPacketAsync(dsc.keyPacket);
-                    await noiseClient.SendPacketAsync(dsc.discoveryPacket);
-                }
-
-                noiseClient.Disconnect();
+                await noiseClient.SendPacketsAsync(new List<IPacket> { keyPacket, discoveryPacket });
             }
 
-            Thread.Sleep(1500);
-            
+            Thread.Sleep(4000);        
             Assert.Equal(expectedMessage, mockupOutput.Outputs.Single());
         }
 
@@ -106,7 +101,7 @@ namespace Noise.Core.Test
             // Mockup server dependencies
             var mockupOutput = new MockupOutput();
             var mockupPacketService = new PacketService();
-            var (mockupPeerConfigurationServer, publicKeyServer) = MockupPeerConfiguration();
+            var mockupPeerConfigurationServer = MockupPeerConfiguration();
 
             // Create server instance
             using var noiseServer = new NoiseServer(mockupOutput, mockupPacketService, mockupPeerConfigurationServer);
@@ -115,38 +110,28 @@ namespace Noise.Core.Test
             // Prepare test data
             var expectedMessage = "Hello World!";
             var expectedEndpointsList = new List<string> { "127.0.0.1" };
-            var expectedKeysList = new List<string> { publicKeyServer };
+            var expectedKeysList = new List<string> { mockupPeerConfigurationServer.PublicKey };
 
             // Create a new thread for sever to listen
             _ = Task.Run(async () => await noiseServer.StartAsync(ct));
 
             // Create new client instance and connect it to the server
-            var (mockupPeerConfigurationClient, publicKeyClient) = MockupPeerConfiguration();
-            using var noiseClient = new NoiseClient();
+            var mockupPeerConfigurationClient = MockupPeerConfiguration();
+            mockupPeerConfigurationClient.InsertEndpoints(expectedEndpointsList);
+            mockupPeerConfigurationClient.InsertKeys(expectedKeysList);
+            using var noiseClient = new NoiseClient(mockupPeerConfigurationClient);
 
             // Prepare the packet and send it to the server via client
-            var messagePackets = mockupPacketService.CreateMessagePackets(publicKeyClient, publicKeyServer, expectedMessage);
+            var messagePackets = mockupPacketService.CreateMessagePackets(mockupPeerConfigurationClient.PublicKey, mockupPeerConfigurationServer.PublicKey, expectedMessage);
+            await noiseClient.SendPacketsAsync(new List<IPacket> { messagePackets.keyPacket, messagePackets.messagePacket });
 
-            foreach (var endpoint in expectedEndpointsList)
-            {
-                await noiseClient.ConnectAsync(endpoint);
-
-                await noiseClient.SendPacketAsync(messagePackets.keyPacket);
-                await noiseClient.SendPacketAsync(messagePackets.messagePacket);
-
-                noiseClient.Disconnect();
-            }
-
-            Thread.Sleep(1500);
-
+            Thread.Sleep(4000);
             Assert.Equal(expectedMessage, mockupOutput.Outputs.Single());
         }
 
-        public (PeerConfiguration, string) MockupPeerConfiguration()
+        public PeerConfiguration MockupPeerConfiguration()
         {
-            var aeh = new AsymmetricEncryptionHandler();
-
-            return (PeerConfiguration.Factory.Initialize(aeh.GetPrivateKey()), aeh.GetPublicKey());
+            return PeerConfiguration.Factory.Initialize();
         }
     }
 
