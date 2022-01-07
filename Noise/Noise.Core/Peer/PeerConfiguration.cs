@@ -1,4 +1,5 @@
-﻿using Noise.Core.Extensions;
+﻿using Noise.Core.Encryption;
+using Noise.Core.Extensions;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -18,6 +19,7 @@ namespace Noise.Core.Peer
         private Dictionary<string, string> _peerKeyAliasMap;
 
         public string PrivateKeyXml { get; init; }
+        public string PublicKey { get; set; }
         public bool VerboseMode { get; init; }
 
         [JsonConstructor]
@@ -126,12 +128,15 @@ namespace Noise.Core.Peer
                 });
             }
 
-            public static PeerConfiguration Initialize(string privateKeyXml)
+            public static PeerConfiguration Initialize()
             {
+                var aeh = new AsymmetricEncryptionHandler();
+
                 #pragma warning disable CS0618 // Type or member is obsolete
                 return new PeerConfiguration
                 {
-                    PrivateKeyXml = privateKeyXml,
+                    PrivateKeyXml = aeh.GetPrivateKey(),
+                    PublicKey = aeh.GetPublicKey(),
                     VerboseMode = false,
                 };
                 #pragma warning restore CS0618 // Type or member is obsolete

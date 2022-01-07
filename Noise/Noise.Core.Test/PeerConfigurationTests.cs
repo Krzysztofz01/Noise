@@ -1,5 +1,4 @@
-﻿using Noise.Core.Encryption;
-using Noise.Core.Peer;
+﻿using Noise.Core.Peer;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -130,9 +129,7 @@ namespace Noise.Core.Test
 
         public PeerConfiguration MockUpPeerConfiguration()
         {
-            var aeh = new AsymmetricEncryptionHandler();
-
-            return PeerConfiguration.Factory.Initialize(aeh.GetPrivateKey());
+            return PeerConfiguration.Factory.Initialize();
         }
     }
 }

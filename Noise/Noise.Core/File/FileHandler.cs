@@ -34,6 +34,20 @@ namespace Noise.Core.File
             }
         }
 
+        public static PeerConfiguration GetPeerConfiguration()
+        {
+            try
+            {
+                var filePath = Path.Combine(Directory.GetCurrentDirectory(), _peerConfigurationFileName);
 
+                var serializedPeerConfiguration = System.IO.File.ReadAllText(filePath);
+
+                return PeerConfiguration.Factory.Deserialize(serializedPeerConfiguration);
+            }
+            catch (Exception)
+            {
+                throw;
+            }
+        }
     }
 }
