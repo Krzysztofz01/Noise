@@ -3,6 +3,7 @@ using Noise.Core.Events;
 using Noise.Core.Peer;
 using Noise.Core.Protocol;
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Net.Sockets;
@@ -55,7 +56,17 @@ namespace Noise.Core.Server
 
             if (publicKey is not null && message is not null)
             {
-                string alias = _peerConfiguration.GetAliasByKey(publicKey);
+                if (!_peerConfiguration.IsPeerKnown(publicKey))
+                {
+                    _peerConfiguration.InsertPeers(new List<string> { publicKey });
+                }
+
+                if (!_peerConfiguration.IsEndpointKnown(endpoint))
+                {
+                    _peerConfiguration.InsertEndpoints(new List<string> { endpoint });
+                }
+
+                string alias = _peerConfiguration.GetPeerByKey(publicKey).Alias;
 
                 _output.WriteMessage(publicKey, message, endpoint, alias);
                 return;
@@ -75,7 +86,7 @@ namespace Noise.Core.Server
 
             if (publicKeys is not null && endpoints is not null)
             {
-                _peerConfiguration.InsertKeys(publicKeys);
+                _peerConfiguration.InsertPeers(publicKeys);
                 _peerConfiguration.InsertEndpoints(endpoints);
 
                 if (_verboseMode)

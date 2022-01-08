@@ -68,7 +68,7 @@ namespace Noise.Core.Test
                 "AAA"
             };
 
-            pc.InsertKeys(keys);
+            pc.InsertPeers(keys);
 
             var expectedCount = 2;
 
@@ -85,10 +85,10 @@ namespace Noise.Core.Test
 
             pc.InsertKey(key, alias);
 
-            Assert.Equal(key, pc.GetKeys().Single());
+            Assert.Equal(key, pc.GetKeys().Single().PublicKey);
 
-            Assert.Equal(key, pc.GetKeyByAlias(alias));
-            Assert.Equal(alias, pc.GetAliasByKey(key));
+            Assert.Equal(key, pc.GetPeerByAlias(alias).PublicKey);
+            Assert.Equal(alias, pc.GetPeerByKey(key).Alias);
         }
 
         [Fact]
@@ -101,16 +101,16 @@ namespace Noise.Core.Test
 
             pc.InsertKey(key);
 
-            Assert.NotEqual(alias, pc.GetKeys().Single());
+            Assert.NotEqual(alias, pc.GetPeerByKey(key).Alias);
             Assert.Throws<InvalidOperationException>(() =>
             {
-                pc.GetKeyByAlias(alias);
+                pc.GetPeerByAlias(alias);
             });
 
             pc.InsertAlias(key, alias);
 
-            Assert.Equal(key, pc.GetKeyByAlias(alias));
-            Assert.Equal(alias, pc.GetAliasByKey(key));
+            Assert.Equal(key, pc.GetPeerByAlias(alias).PublicKey);
+            Assert.Equal(alias, pc.GetPeerByKey(key).Alias);
         }
 
         [Fact]

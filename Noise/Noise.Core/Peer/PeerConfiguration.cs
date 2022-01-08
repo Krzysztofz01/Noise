@@ -15,11 +15,10 @@ namespace Noise.Core.Peer
         private const string _defaultAlias = "Anonymous";
 
         private List<string> _peerEndpoints;
-        private HashSet<string> _peerKeys;
-        private Dictionary<string, string> _peerKeyAliasMap;
+        private List<RemotePeer> _remotePeers;
 
         public string PrivateKeyXml { get; init; }
-        public string PublicKey { get; set; }
+        public string PublicKey { get; init; }
         public bool VerboseMode { get; init; }
 
         [JsonConstructor]
@@ -27,8 +26,14 @@ namespace Noise.Core.Peer
         public PeerConfiguration()
         {
             _peerEndpoints = new List<string>();
-            _peerKeys = new HashSet<string>();
-            _peerKeyAliasMap = new Dictionary<string, string>();
+            _remotePeers = new List<RemotePeer>();
+        }
+
+        private int GenerateRemotePeerIdentifier()
+        {
+            if (_remotePeers.Count == 0) return 0;
+
+            return _remotePeers.Max(p => p.Identifier) + 1;
         }
 
         public IEnumerable<string> GetEndpoints()
@@ -49,14 +54,16 @@ namespace Noise.Core.Peer
             _peerEndpoints = _peerEndpoints.Distinct().ToList();
         }
 
-        public void InsertKeys(IEnumerable<string> keys)
+        public void InsertPeers(IEnumerable<string> keys)
         {
             foreach (var key in keys)
+            {
                 if (key.IsEmpty()) throw new ArgumentNullException(nameof(keys), "Invalid values.");
 
-            _peerKeys.UnionWith(keys);
+                if (_remotePeers.Any(p => p.PublicKey == key)) continue;
 
-            _peerKeys = _peerKeys.Distinct().ToHashSet();
+                _remotePeers.Add(RemotePeer.Factory.FromParameters(key, GenerateRemotePeerIdentifier()));
+            }
         }
 
         public void InsertKey(string key, string alias = _defaultAlias)
@@ -64,46 +71,57 @@ namespace Noise.Core.Peer
             if (key.IsEmpty() || alias.IsEmpty())
                 throw new ArgumentNullException(nameof(key), "Invalid values.");
 
-            if (_peerKeys.Contains(key)) return;
-            _peerKeys.Add(key);
+            if (_remotePeers.Any(p => p.PublicKey == key))
+                throw new ArgumentNullException(nameof(key), "The key already exists.");
 
-            if (_peerKeyAliasMap.ContainsKey(key)) return;
-            _peerKeyAliasMap.Add(key, alias);
+            if (_remotePeers.Any(p => p.Alias == alias))
+                throw new ArgumentNullException(nameof(key), "The alias must by unique.");
+
+            _remotePeers.Add(RemotePeer.Factory.FromParameters(key, GenerateRemotePeerIdentifier(), alias));
         }
 
-        public IEnumerable<string> GetKeys()
+        public IEnumerable<RemotePeer> GetKeys()
         {
-            return _peerKeys;
+            return _remotePeers;
         }
 
         public void InsertAlias(string key, string alias)
         {
             if (key.IsEmpty() || alias.IsEmpty())
-                throw new ArgumentNullException("Invalid values.");
+                throw new ArgumentNullException(nameof(key), "Invalid values.");
 
-            if (!_peerKeys.Contains(key))
-                throw new ArgumentNullException("Can not assign alias for unknown key.");
+            if (!_remotePeers.Any(p => p.PublicKey == key))
+                throw new ArgumentNullException(nameof(key), "The key does not exist.");
 
-            if (_peerKeyAliasMap.ContainsKey(key))
-            {
-                _peerKeyAliasMap[key] = alias;
-                return;
-            }
+            if (_remotePeers.Any(p => p.Alias == alias))
+                throw new ArgumentNullException(nameof(key), "The alias must by unique.");
 
-            _peerKeyAliasMap.Add(key, alias);
+            _remotePeers.Single(p => p.PublicKey == key).SetAlias(alias);
         }
 
-        public string GetKeyByAlias(string alias)
+        public RemotePeer GetPeerByAlias(string alias)
         {
-            return _peerKeyAliasMap.Single(k => k.Value == alias).Key;
+            return _remotePeers.Single(p => p.Alias == alias);
         }
 
-        public string GetAliasByKey(string key)
+        public RemotePeer GetPeerByKey(string key)
         {
-            if (_peerKeyAliasMap.ContainsKey(key))
-                return _peerKeyAliasMap[key];
+            return _remotePeers.Single(p => p.PublicKey == key);
+        }
 
-            return null;
+        public RemotePeer GetPeerByIdentifier(int id)
+        {
+            return _remotePeers.Single(p => p.Identifier == id);
+        }
+
+        public bool IsEndpointKnown(string endpoint)
+        {
+            return _peerEndpoints.Any(e => e == endpoint);
+        }
+
+        public bool IsPeerKnown(string publicKey)
+        {
+            return _remotePeers.Any(p => p.PublicKey == publicKey);
         }
 
         public string Serialize()

@@ -50,7 +50,7 @@ namespace Noise.Core.Test
             // Create new client instance and connect it to the server
             var mockupPeerConfigurationClient = MockupPeerConfiguration();
             mockupPeerConfigurationClient.InsertEndpoints(expectedEndpointsList);
-            mockupPeerConfigurationClient.InsertKeys(expectedKeysList);
+            mockupPeerConfigurationClient.InsertPeers(expectedKeysList);
             using var noiseClient = new NoiseClient(mockupPeerConfigurationClient);
 
             // Prepare the packet and send it to the server via client
@@ -81,7 +81,7 @@ namespace Noise.Core.Test
             // Create new client instance and connect it to the server
             var mockupPeerConfigurationClient = MockupPeerConfiguration();
             mockupPeerConfigurationClient.InsertEndpoints(expectedEndpointsList);
-            mockupPeerConfigurationClient.InsertKeys(expectedKeysList);
+            mockupPeerConfigurationClient.InsertPeers(expectedKeysList);
             using var noiseClient = new NoiseClient(mockupPeerConfigurationClient);
 
             // Prepare the packet and send it to the server via client
@@ -118,7 +118,7 @@ namespace Noise.Core.Test
             // Create new client instance and connect it to the server
             var mockupPeerConfigurationClient = MockupPeerConfiguration();
             mockupPeerConfigurationClient.InsertEndpoints(expectedEndpointsList);
-            mockupPeerConfigurationClient.InsertKeys(expectedKeysList);
+            mockupPeerConfigurationClient.InsertPeers(expectedKeysList);
             using var noiseClient = new NoiseClient(mockupPeerConfigurationClient);
 
             // Prepare the packet and send it to the server via client
@@ -157,6 +157,10 @@ namespace Noise.Core.Test
         }
 
         public void WritePing(string senderIpAddress)
+        {
+        }
+
+        public void WriteRaw(string value)
         {
         }
     }
