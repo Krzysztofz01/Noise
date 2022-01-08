@@ -35,5 +35,15 @@ namespace Noise.Host
             Console.WriteLine("[Ping] {0}", senderIpAddress);
             Console.ResetColor();
         }
+
+        public void WriteRaw(string value)
+        {
+            Console.WriteLine(value);
+        }
+
+        public void Clear()
+        {
+            Console.Clear();
+        }
     }
 }

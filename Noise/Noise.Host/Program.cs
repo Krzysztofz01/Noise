@@ -28,21 +28,32 @@ namespace Noise.Host
                 _output = new ConsoleOutput();
                 _packetService = new PacketService();
 
-                var ct = new CancellationToken(false);
+                var cts = new CancellationTokenSource();
 
                 // Server setup
                 using var server = new NoiseServer(_output, _packetService, _peerConfiguration);         
-                _ = Task.Run(async () => await server.StartAsync(ct));
+                _ = Task.Run(async () => await server.StartAsync(cts.Token));
 
                 // Client setup
                 using var client = new NoiseClient(_peerConfiguration);
+                var commandHandler = new CommandHandler(_peerConfiguration, _output, _packetService, cts);
 
-                while (!ct.IsCancellationRequested)
+                while (!cts.Token.IsCancellationRequested)
                 {
-                    Console.Write("> ");
-                    string inputCommand = Console.ReadLine();
-                    await ParseInput(inputCommand, client, _output, _peerConfiguration, ct);
+                    try
+                    {
+                        Console.Write("> ");
+
+                        await commandHandler.Execute(Console.ReadLine());
+                    }
+                    catch (Exception ex)
+                    {
+                        _output.WriteException("Command exception", ex);
+                    }
                 }
+
+                await FileHandler.SavePeerConfigurationFile(_peerConfiguration);
+                Thread.Sleep(1000);
 
                 return SUCCESS;
             }
@@ -72,12 +83,6 @@ namespace Noise.Host
                 Console.WriteLine("Fatal error. Can not utilize configuration.");
                 throw;
             }
-        }
-
-        private async static Task ParseInput(string input, INoiseClient noiseClient, IOutput output, PeerConfiguration peerConfiguration, CancellationToken ct)
-        {
-            output.WriteLog(input);
-            throw new NotImplementedException();
         }
     }
 }
