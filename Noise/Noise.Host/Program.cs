@@ -4,6 +4,7 @@ using Noise.Core.File;
 using Noise.Core.Peer;
 using Noise.Core.Server;
 using Noise.Core.Services;
+using Noise.Host.Abstraction;
 using System;
 using System.Threading;
 using System.Threading.Tasks;
@@ -18,6 +19,7 @@ namespace Noise.Host
         private static PeerConfiguration _peerConfiguration;
         private static IOutput _output;
         private static IPacketService _packetService;
+        private static ICommandHandler _commandHandler;
 
         private static async Task<int> Main(string[] args)
         {
@@ -36,15 +38,17 @@ namespace Noise.Host
 
                 // Client setup
                 using var client = new NoiseClient(_peerConfiguration);
-                var commandHandler = new CommandHandler(_peerConfiguration, _output, _packetService, cts);
+
+                // Client command handler init
+                _commandHandler = new CommandHandler(_peerConfiguration, _output, _packetService, client, cts);
 
                 while (!cts.Token.IsCancellationRequested)
                 {
                     try
                     {
-                        Console.Write("> ");
+                        _commandHandler.Prefix();
 
-                        await commandHandler.Execute(Console.ReadLine());
+                        await _commandHandler.Execute(Console.ReadLine());
                     }
                     catch (Exception ex)
                     {
