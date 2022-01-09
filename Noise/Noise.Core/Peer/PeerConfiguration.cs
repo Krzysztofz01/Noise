@@ -9,13 +9,16 @@ using System.Text.Json.Serialization;
 
 namespace Noise.Core.Peer
 {
+    #pragma warning disable CS0618 // Type or member is obsolete
     public class PeerConfiguration
     {
-        [JsonIgnore]
         private const string _defaultAlias = "Anonymous";
 
-        private List<string> _peerEndpoints;
-        private List<RemotePeer> _remotePeers;
+        [Obsolete("Use the correct methods instead of the collection.")]
+        public List<string> _peerEndpoints { get; set; }
+
+        [Obsolete("Use the correct methods instead of the collection.")]
+        public List<RemotePeer> _remotePeers { get; set; }
 
         public string PrivateKeyXml { get; init; }
         public string PublicKey { get; init; }
@@ -47,11 +50,11 @@ namespace Noise.Core.Peer
             {
                 if (!IPAddress.TryParse(endpoint, out _))
                     throw new ArgumentException("Invalid endpoint format.", nameof(endpoints));
+
+                if (_peerEndpoints.Any(e => e == endpoint)) continue;
+
+                _peerEndpoints.Add(endpoint);
             }
-
-            _peerEndpoints.AddRange(endpoints);
-
-            _peerEndpoints = _peerEndpoints.Distinct().ToList();
         }
 
         public void InsertPeers(IEnumerable<string> keys)
@@ -128,9 +131,9 @@ namespace Noise.Core.Peer
         {
             return JsonSerializer.Serialize(this, new JsonSerializerOptions
             {
-                IncludeFields = true,
-                IgnoreReadOnlyFields = false,
-                IgnoreReadOnlyProperties = false
+                IncludeFields = false,
+                IgnoreReadOnlyFields = true,
+                IgnoreReadOnlyProperties = true
             });
         }
 
@@ -140,9 +143,9 @@ namespace Noise.Core.Peer
             {
                 return JsonSerializer.Deserialize<PeerConfiguration>(serializedPeerConfiguration, new JsonSerializerOptions
                 {
-                    IncludeFields = true,
-                    IgnoreReadOnlyFields = false,
-                    IgnoreReadOnlyProperties = false
+                    IncludeFields = false,
+                    IgnoreReadOnlyFields = true,
+                    IgnoreReadOnlyProperties = true
                 });
             }
 
@@ -150,15 +153,14 @@ namespace Noise.Core.Peer
             {
                 var aeh = new AsymmetricEncryptionHandler();
 
-                #pragma warning disable CS0618 // Type or member is obsolete
                 return new PeerConfiguration
                 {
                     PrivateKeyXml = aeh.GetPrivateKey(),
                     PublicKey = aeh.GetPublicKey(),
                     VerboseMode = false,
                 };
-                #pragma warning restore CS0618 // Type or member is obsolete
             }
         }
     }
+    #pragma warning restore CS0618 // Type or member is obsolete
 }
