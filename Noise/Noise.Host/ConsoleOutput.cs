@@ -36,9 +36,15 @@ namespace Noise.Host
             Console.ResetColor();
         }
 
-        public void WriteRaw(string value)
+        public void WriteRaw(string value, bool newLine = true)
         {
-            Console.WriteLine(value);
+            if (newLine)
+            {
+                Console.WriteLine(value);
+                return;
+            }
+
+            Console.Write(value);
         }
 
         public void Clear()

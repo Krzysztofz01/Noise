@@ -160,7 +160,7 @@ namespace Noise.Core.Test
         {
         }
 
-        public void WriteRaw(string value)
+        public void WriteRaw(string value, bool newLine = true)
         {
         }
     }

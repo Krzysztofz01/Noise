@@ -8,6 +8,6 @@ namespace Noise.Core.Abstraction
         void WritePing(string senderIpAddress);
         void WriteException(string message, Exception ex);
         void WriteLog(string message);
-        void WriteRaw(string value);
+        void WriteRaw(string value, bool newLine = true);
     }
 }
