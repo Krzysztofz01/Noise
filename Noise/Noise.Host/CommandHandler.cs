@@ -70,6 +70,9 @@ namespace Noise.Host
                 case "SELECT": ExecuteSelect(args); return;
                 case "RESET": ExecuteReset(); return;
                 case "SEND": await ExecuteSend(args); return;
+                case "ALIAS": ExecuteAlias(args); return;
+                case "INSERT": ExecuteInsert(args); return;
+                case "HELP": ExecuteHelp(); return;
 
                 default: throw new InvalidOperationException("Invalid command.");
             }
@@ -144,6 +147,8 @@ namespace Noise.Host
                 }
                 return;
             }
+
+            _output.WriteRaw(usage);
         }
 
         private void ExecuteSelect(string[] args)
@@ -216,6 +221,108 @@ namespace Noise.Host
                 _output.WriteException("Message sending failure.", ex);
                 return;
             }
+        }
+
+        private void ExecuteAlias(string[] args)
+        {
+            string usage = "Command usage: alias <id> <value>";
+
+            if (args.Count() != 2)
+            {
+                _output.WriteRaw(usage);
+                return;
+            }
+
+            int id = Convert.ToInt32(args.First());
+            string alias = args.Last();
+
+            try
+            {
+                var peer = _peerConfiguration.GetPeerByIdentifier(id);
+
+                _peerConfiguration.InsertAlias(peer.PublicKey, alias);
+            }
+            catch (Exception ex)
+            {
+                _output.WriteException("Peer not found.", ex);
+                return;
+            }
+        }
+
+        private void ExecuteInsert(string[] args)
+        {
+            string usage = "Command usage: insert <peer/endpoint> <value - key or endpoint> <value - alias?>";
+
+            var arguments = args.ToList();
+
+            if (arguments.Count < 2)
+            {
+                _output.WriteRaw(usage);
+                return;
+            }
+
+            if (arguments.First().ToUpper() == "PEER")
+            {
+                try
+                {
+                    string key = arguments[1];
+
+                    if (arguments.Count > 2)
+                    {
+                        _peerConfiguration.InsertKey(key, arguments.Last());
+                        return;
+                    }
+
+                    _peerConfiguration.InsertKey(key);
+                }
+                catch (Exception ex)
+                {
+                    _output.WriteException("Invalid key format.", ex);
+                    return;
+                }
+
+                return;
+            }
+
+            if (arguments.First().ToUpper() == "ENDPOINT")
+            {
+                try
+                {
+                    string endpoint = arguments[1];
+
+                    _peerConfiguration.InsertEndpoints(new List<string> { endpoint });
+                }
+                catch (Exception ex)
+                {
+                    _output.WriteException("Invalid endpoint format.", ex);
+                    return;
+                }
+
+                return;
+            }
+
+            _output.WriteRaw(usage);
+            return;
+        }
+
+        private void ExecuteHelp()
+        {
+            _output.WriteRaw(Title.asciiTitle, false);
+
+            _output.WriteRaw($"{Environment.NewLine}v1.0.0");
+            _output.WriteRaw("https://github.com/Krzysztofz01/Noise");
+
+            _output.WriteRaw($"{Environment.NewLine}Available commands:");
+
+            _output.WriteRaw("EXIT - Close connections, save local data and exit.");
+            _output.WriteRaw("CLEAR - Clear the screen.");
+            _output.WriteRaw("LIST - List available peer keys, aliases or endpoints.");
+            _output.WriteRaw("SELECT - Select a peer to perform interactions.");
+            _output.WriteRaw("RESET - Reset selected peer.");
+            _output.WriteRaw("SEND - Send message to selected peer.");
+            _output.WriteRaw("ALIAS - Set alias to certain peer.");
+            _output.WriteRaw("INSERT - Insert new peer key and optional alias or a endpoint.");
+            _output.WriteRaw("HELP - Show available commands.");
         }
     }
 }
