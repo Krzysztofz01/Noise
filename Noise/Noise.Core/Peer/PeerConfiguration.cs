@@ -48,12 +48,14 @@ namespace Noise.Core.Peer
         {
             foreach (var endpoint in endpoints)
             {
-                if (!IPAddress.TryParse(endpoint, out _))
+                string ipAddress = endpoint.Split(':').First();
+
+                if (!IPAddress.TryParse(ipAddress, out _))
                     throw new ArgumentException("Invalid endpoint format.", nameof(endpoints));
 
-                if (_peerEndpoints.Any(e => e == endpoint)) continue;
+                if (_peerEndpoints.Any(e => e == ipAddress)) continue;
 
-                _peerEndpoints.Add(endpoint);
+                _peerEndpoints.Add(ipAddress);
             }
         }
 
@@ -77,7 +79,7 @@ namespace Noise.Core.Peer
             if (_remotePeers.Any(p => p.PublicKey == key))
                 throw new ArgumentNullException(nameof(key), "The key already exists.");
 
-            if (_remotePeers.Any(p => p.Alias == alias))
+            if (_remotePeers.Any(p => p.Alias == alias && alias != _defaultAlias))
                 throw new ArgumentNullException(nameof(key), "The alias must by unique.");
 
             _remotePeers.Add(RemotePeer.Factory.FromParameters(key, GenerateRemotePeerIdentifier(), alias));
