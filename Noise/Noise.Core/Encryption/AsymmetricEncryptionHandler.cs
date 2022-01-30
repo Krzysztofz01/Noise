@@ -1,110 +1,87 @@
-﻿using System;
-using System.IO;
+﻿using Noise.Core.Extensions;
+using System;
 using System.Security.Cryptography;
 using System.Text;
-using System.Xml.Serialization;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace Noise.Core.Encryption
 {
-    public class AsymmetricEncryptionHandler
+    public static class AsymmetricEncryptionHandler
     {
         private const bool _useOAEPPadding = false;
-        private const int _keyLength = 4096; //2048
+        private const int _keyLength = 4096;
+        private static readonly byte[] _AQAB = new byte[] { 1, 0, 1 };
 
-        private readonly RSACryptoServiceProvider _rsa = new(_keyLength);
-
-        private readonly RSAParameters _privateKey;
-        private readonly RSAParameters _publicKey;
-
-        public AsymmetricEncryptionHandler()
+        private static readonly JsonSerializerOptions _serializationOptions = new()
         {
-            _privateKey = _rsa.ExportParameters(true);
-            _publicKey = _rsa.ExportParameters(false);
+            DefaultIgnoreCondition = JsonIgnoreCondition.Never,
+            IgnoreReadOnlyFields = false,
+            IgnoreReadOnlyProperties = false,
+            IncludeFields = true,
+            WriteIndented = false,
+            PropertyNameCaseInsensitive = true
+        };
+
+        public static string InitializePrivateKey()
+        {
+            using var rsa = new RSACryptoServiceProvider(_keyLength);
+
+            var privateKeyStruct = rsa.ExportParameters(true);
+
+            var serializedPrivateKeyStruct = JsonSerializer.Serialize(privateKeyStruct, _serializationOptions);
+
+            return serializedPrivateKeyStruct.FromUtf8ToBase64();
         }
 
-        public AsymmetricEncryptionHandler(string privateRsaParametersXml)
+        public static string GetPublicKeyBase64(string privateKeyBase64)
         {
-            var xmlSerializer = new XmlSerializer(typeof(RSAParameters));
-            using var stringReader = new StringReader(privateRsaParametersXml);
-            var privateRsaParameters = (RSAParameters)xmlSerializer.Deserialize(stringReader);
+            var serializedPrivateKey = privateKeyBase64.FromBase64ToUtf8();
 
-            _rsa.ImportParameters(privateRsaParameters);
+            var privateKey = JsonSerializer.Deserialize<RSAParameters>(serializedPrivateKey, _serializationOptions);
 
-            _privateKey = _rsa.ExportParameters(true);
-            _publicKey = _rsa.ExportParameters(false);
+            return Convert.ToBase64String(privateKey.Modulus);
         }
 
-        public string GetPublicKey()
+        public static string Decrypt(string cipherDataBase64, string privateKeyBase64)
         {
-            using var stringWriter = new StringWriter();
+            var serializedPrivateKey = privateKeyBase64.FromBase64ToUtf8();
 
-            var xmlSerializer = new XmlSerializer(typeof(RSAParameters));
-            xmlSerializer.Serialize(stringWriter, _publicKey);
+            var privateKey = JsonSerializer.Deserialize<RSAParameters>(serializedPrivateKey, _serializationOptions);
 
-            var serializedPublicKey = stringWriter.ToString();
-            return ExtractPublicKeyFromXml(serializedPublicKey);
-        }
+            using var rsa = new RSACryptoServiceProvider(_keyLength);
+            rsa.ImportParameters(privateKey);
 
-        public string GetPrivateKey()
-        {
-            using var stringWriter = new StringWriter();
-
-            var xmlSerializer = new XmlSerializer(typeof(RSAParameters));
-            xmlSerializer.Serialize(stringWriter, _privateKey);
-
-            return stringWriter.ToString();
-        }
-
-        public string Decrypt(string cypherData)
-        {
-            _rsa.ImportParameters(_privateKey);
-            
-            var dataBytes = Convert.FromBase64String(cypherData);
+            var dataBytes = Convert.FromBase64String(cipherDataBase64);
 
             try
             {
-                var plainText = _rsa.Decrypt(dataBytes, _useOAEPPadding);
+                var plainData = rsa.Decrypt(dataBytes, _useOAEPPadding);
 
-                return Encoding.Unicode.GetString(plainText);
+                return Encoding.UTF8.GetString(plainData);
             }
-            catch(CryptographicException)
+            catch (CryptographicException)
             {
                 return null;
             }
         }
 
-        public static string Encrypt(string plainData, string publicKey)
+        public static string Encrypt(string plainData, string publicKeyBase64)
         {
-            var xmlSerializedPublicKey = InsertPublicKeyIntoXml(publicKey);
+            var rsaParameters = new RSAParameters
+            {
+                Modulus = Convert.FromBase64String(publicKeyBase64),
+                Exponent = _AQAB
+            };
 
-            var xmlSerializer = new XmlSerializer(typeof(RSAParameters));
+            using var rsa = new RSACryptoServiceProvider(_keyLength);
+            rsa.ImportParameters(rsaParameters);
 
-            using var stringReader = new StringReader(xmlSerializedPublicKey);
+            var encodedData = Encoding.UTF8.GetBytes(plainData);
 
-            var rsaPublicKeyParameter = (RSAParameters)xmlSerializer.Deserialize(stringReader);
+            var cipherData = rsa.Encrypt(encodedData, _useOAEPPadding);
 
-            using var rsa = new RSACryptoServiceProvider();
-            rsa.ImportParameters(rsaPublicKeyParameter);
-
-            var encodedData = Encoding.Unicode.GetBytes(plainData);
-
-            var cypherData = rsa.Encrypt(encodedData, _useOAEPPadding);
-
-            return Convert.ToBase64String(cypherData);
-        }
-
-        private static string ExtractPublicKeyFromXml(string publicKeyXml)
-        {
-            const string targetTagOpen = "<Modulus>";
-            const string targetTagClosed = "</Modulus>";
-
-            return publicKeyXml.Substring(publicKeyXml.IndexOf(targetTagOpen) + targetTagOpen.Length,
-                publicKeyXml.IndexOf(targetTagClosed) - publicKeyXml.IndexOf(targetTagOpen) - targetTagOpen.Length);
-        }
-
-        private static string InsertPublicKeyIntoXml(string publicKey)
-        {
-            return $"<?xml version=\"1.0\" encoding=\"utf-16\"?><RSAParameters xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\"><Exponent>AQAB</Exponent><Modulus>{publicKey}</Modulus></RSAParameters>";
+            return Convert.ToBase64String(cipherData);
         }
     }
 }
