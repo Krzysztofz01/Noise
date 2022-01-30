@@ -5,26 +5,23 @@ using System.Text;
 
 namespace Noise.Core.Encryption
 {
-    public class SymmetricEncryptionHandler
+    public static class SymmetricEncryptionHandler
     {
         private const int _keySize = 64;
         private const int _saltSize = 8;
         private const int _bytesDeriveIterations = 1000;
 
-        public SymmetricEncryptionHandler() { }
-
-        public (string cipher, string key) Encrypt(string data)
+        public static (string cipherBase64, string keyBase64) Encrypt(string plainData)
         {
             var keyBytes = new byte[_keySize];
             
-            using var rngCrypto = new RNGCryptoServiceProvider();
-            rngCrypto.GetBytes(keyBytes);
+            RandomNumberGenerator.Create().GetBytes(keyBytes);
 
             var encodedKey = Convert.ToBase64String(keyBytes);
 
             using var aesGcm = CreateAesGcm(encodedKey);
 
-            byte[] dataBytes = Encoding.Unicode.GetBytes(data);
+            byte[] dataBytes = Encoding.UTF8.GetBytes(plainData);
 
             int nonceSize = AesGcm.NonceByteSizes.MaxSize;
             int tagSize = AesGcm.TagByteSizes.MaxSize;
@@ -52,11 +49,11 @@ namespace Noise.Core.Encryption
             return (encodedCipher, encodedKey);
         }
         
-        public string Decrypt(string cipher, string key)
+        public static string Decrypt(string cipherBase64, string keyBase64)
         {
-            Span<byte> encryptedData = Convert.FromBase64String(cipher).AsSpan();
+            Span<byte> encryptedData = Convert.FromBase64String(cipherBase64).AsSpan();
 
-            using var aesGcm = CreateAesGcm(key);
+            using var aesGcm = CreateAesGcm(keyBase64);
 
             int nonceSize = BinaryPrimitives.ReadInt32LittleEndian(encryptedData.Slice(0, 4));
             int tagSize = BinaryPrimitives.ReadInt32LittleEndian(encryptedData.Slice(4 + nonceSize, 4));
@@ -74,7 +71,7 @@ namespace Noise.Core.Encryption
             {
                 aesGcm.Decrypt(nonce, cipherBytes, tag, plainBytes);
 
-                return Encoding.Unicode.GetString(plainBytes);
+                return Encoding.UTF8.GetString(plainBytes);
             }
             catch (CryptographicException)
             {
@@ -82,7 +79,7 @@ namespace Noise.Core.Encryption
             }
         }
 
-        private AesGcm CreateAesGcm(string key)
+        private static AesGcm CreateAesGcm(string key)
         {
             var salt = new byte[_saltSize];
 
