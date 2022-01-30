@@ -6,12 +6,10 @@ namespace Noise.Core.Test
     public class EncryptionTests
     {
         [Fact]
-        public void AsymmetricHandlerShouldBeCreatedAndDeliverKeyPair()
+        public void AsymmetricHandlerShouldCreateKeyPair()
         {
-            var aeh = new AsymmetricEncryptionHandler();
-
-            string privateKey = aeh.GetPrivateKey();
-            string publicKey = aeh.GetPublicKey();
+            string privateKey = AsymmetricEncryptionHandler.InitializePrivateKey();
+            string publicKey = AsymmetricEncryptionHandler.GetPublicKeyBase64(privateKey);
 
             Assert.NotNull(publicKey);
             Assert.NotNull(privateKey);
@@ -20,16 +18,14 @@ namespace Noise.Core.Test
         [Fact]
         public void AsymmetricHandlerShouldEncryptAndDecryptUsingCorrectKeyPair()
         {
-            var firstAeh = new AsymmetricEncryptionHandler();
-            string firstPrivateKey = firstAeh.GetPrivateKey();
-            string firstPublicKey = firstAeh.GetPublicKey();
+            string privateKey = AsymmetricEncryptionHandler.InitializePrivateKey();
+            string publicKey = AsymmetricEncryptionHandler.GetPublicKeyBase64(privateKey);
 
             string plainTextMessage = "Hello World!";
-            
-            string cipher = AsymmetricEncryptionHandler.Encrypt(plainTextMessage, firstPublicKey);
 
-            var secondAeh = new AsymmetricEncryptionHandler(firstPrivateKey);
-            string decryptedCipher = secondAeh.Decrypt(cipher);
+            string cipher = AsymmetricEncryptionHandler.Encrypt(plainTextMessage, publicKey);
+
+            string decryptedCipher = AsymmetricEncryptionHandler.Decrypt(cipher, privateKey);
 
             Assert.Equal(plainTextMessage, decryptedCipher);
         }
@@ -37,25 +33,27 @@ namespace Noise.Core.Test
         [Fact]
         public void AsymmetricHandlerShoudEncryptButNotDecryptIncorrectKeyPair()
         {
-            var firstAeh = new AsymmetricEncryptionHandler();
-            string firstPublicKey = firstAeh.GetPublicKey();
+            string privateKey = AsymmetricEncryptionHandler.InitializePrivateKey();
+            string publicKey = AsymmetricEncryptionHandler.GetPublicKeyBase64(privateKey);
 
             string plainTextMessage = "Hello World!";
-            string cipher = AsymmetricEncryptionHandler.Encrypt(plainTextMessage, firstPublicKey);
 
-            var secondAeh = new AsymmetricEncryptionHandler();
-            string decryptedCipher = secondAeh.Decrypt(cipher);
+            string cipher = AsymmetricEncryptionHandler.Encrypt(plainTextMessage, publicKey);
+
+            string incorrectPrivateKey = AsymmetricEncryptionHandler.InitializePrivateKey();
+
+            string decryptedCipher = AsymmetricEncryptionHandler.Decrypt(cipher, incorrectPrivateKey);
 
             Assert.NotEqual(plainTextMessage, decryptedCipher);
+            Assert.Null(decryptedCipher);
         }
 
         [Fact]
         public void SymmetricHandlerShouldBeCreatedAndEncryptData()
         {
-            var seh = new SymmetricEncryptionHandler();
-
             string plainTextMessage = "Hello World!";
-            var (cipher, key) = seh.Encrypt(plainTextMessage);
+
+            var (cipher, key) = SymmetricEncryptionHandler.Encrypt(plainTextMessage);
 
             Assert.NotNull(cipher);
             Assert.NotNull(key);
@@ -64,15 +62,11 @@ namespace Noise.Core.Test
         [Fact]
         public void SymmetricHandlerShouldEncryptAndDecryptUsingCorrectKey()
         {
-            var firstSeh = new SymmetricEncryptionHandler();
-
             string plainTextMessage = "Hello World!";
-            var (cipher, key) = firstSeh.Encrypt(plainTextMessage);
 
-            int keyLength = key.Length;
+            var (cipher, key) = SymmetricEncryptionHandler.Encrypt(plainTextMessage);
 
-            var secondSeh = new SymmetricEncryptionHandler();
-            var decryptedCipher = secondSeh.Decrypt(cipher, key);
+            var decryptedCipher = SymmetricEncryptionHandler.Decrypt(cipher, key);
 
             Assert.Equal(plainTextMessage, decryptedCipher);
         }
@@ -80,16 +74,16 @@ namespace Noise.Core.Test
         [Fact]
         public void SymmetricHandlerShouldEncryptButNotDecryptUsingTheIncorrectKey()
         {
-            var firstSeh = new SymmetricEncryptionHandler();
-
             string plainTextMessage = "Hello World!";
-            var (cipher, key) = firstSeh.Encrypt(plainTextMessage);
+            
+            var (cipher, _) = SymmetricEncryptionHandler.Encrypt(plainTextMessage);
 
-            var secondSeh = new SymmetricEncryptionHandler();
             var wrongKey = "This is not the correct key!";
-            var decryptedCipher = secondSeh.Decrypt(cipher, wrongKey);
+
+            var decryptedCipher = SymmetricEncryptionHandler.Decrypt(cipher, wrongKey);
 
             Assert.NotEqual(plainTextMessage, decryptedCipher);
+            Assert.Null(decryptedCipher);
         }
     }
 }
