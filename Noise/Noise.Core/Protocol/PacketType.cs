@@ -6,7 +6,9 @@ namespace Noise.Core.Protocol
     {
         PING = 0,
         DISCOVERY = 1,
-        KEY = 2,
-        MESSAGE = 3
+        DISCOVERY_FORWARD = 2,
+        SIGNATURE = 3,
+        MESSAGE = 4,
+        KEY = 5
     }
 }
