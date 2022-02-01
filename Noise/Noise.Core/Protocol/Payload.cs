@@ -1,100 +1,44 @@
 ﻿using Noise.Core.Extensions;
+using Noise.Core.Hashing;
 using System;
-using System.Text.Json;
-using System.Text.Json.Serialization;
+using System.Collections.Generic;
 
 namespace Noise.Core.Protocol
 {
-    public class Payload
+    public abstract class Payload<TPayload> where TPayload : Payload<TPayload>, new()
     {
-        [JsonIgnore]
-        private bool _publicKeyPresence;
+        private Dictionary<string, string> _properties;
+        protected IReadOnlyDictionary<string, string> Properties => _properties;
 
-        private readonly string _publicKey;
-        public string PublicKey
+        protected Payload()
         {
-            get => (_publicKeyPresence && _publicKey.IsEmpty())
-                ? throw new InvalidOperationException("This payload does not contain a public key. Make sure you perform operations on the correct type of packet.")
-                : _publicKey;
-
-            init => _publicKey = value ?? string.Empty;
+            _properties = new Dictionary<string, string>();
         }
 
-        public readonly string _content;
-        public string Content
+        public abstract PacketType Type { get; }
+
+        public byte[] Serialize() => PayloadSerializer.Serialize(Properties);
+        public byte[] CalculateChecksum() => SHA1HashingHandler.HashToBytes(Serialize());
+
+        protected void InsertProperty(string key, string value)
         {
-            get => _content;
-            init => _content = value;
+            if (key.IsEmpty() || value is null)
+                throw new InvalidOperationException("Invalid property require a key-value pair.");
+
+            if (Properties.ContainsKey(key))
+                throw new InvalidOperationException("The payload property key must be unique.");
+
+            _properties.Add(key, value);
         }
 
-        public string Serialize()
+        protected abstract void Validate();
+
+        public static TPayload Deserialize(byte[] payload)
         {
-            return JsonSerializer.Serialize(this, new JsonSerializerOptions
+            return new TPayload
             {
-                IgnoreReadOnlyFields = true,
-                IgnoreReadOnlyProperties = true,
-                IncludeFields = false
-            });
-        }
-        private Payload() { }
-
-        [JsonConstructor]
-        [Obsolete("This constructor is only for deserialization. Use one of the methods of the Payload.Factory class.")]
-        public Payload(string publicKey, string content)
-        {
-            PublicKey = publicKey;
-            Content = content;
-        }
-
-        public static class Factory
-        {
-            public static Payload Deserialize(string serializedPayload, bool validatePublicKeyPresence = true)
-            {
-                if (serializedPayload.IsEmpty())
-                    throw new ArgumentNullException("Invalid payload format. The packet may be corrupted.");
-
-                var payload = JsonSerializer.Deserialize<Payload>(serializedPayload, new JsonSerializerOptions
-                {
-                    IgnoreReadOnlyFields = true,
-                    IgnoreReadOnlyProperties = true,
-                    IncludeFields = false
-                });
-
-                payload._publicKeyPresence = validatePublicKeyPresence;
-
-                if (payload.PublicKey.IsEmpty() && payload._publicKeyPresence)
-                    throw new ArgumentException("The public key is required. Make sure to use correct valiation rules and packet type.");
-
-                return payload;
-            }
-
-            public static Payload FromParameters(string content)
-            {
-                return new Payload
-                {
-                    PublicKey = null,
-                    _publicKeyPresence = false,
-                    Content = content.IsEmpty() ? string.Empty : content
-                };
-            }
-
-            public static Payload FromParameters(string publicKey, string content, bool validatePublicKeyPresence = true)
-            {
-                if (publicKey.IsEmpty() && validatePublicKeyPresence)
-                    throw new ArgumentException("The public key is required. Make sure to use correct valiation rules and packet type.");
-
-                if (publicKey?.Length != Constants.PublicKeyStringSize && validatePublicKeyPresence)
-                    throw new ArgumentException("The public key format is invalid.");
-
-                return new Payload
-                {
-                    PublicKey = publicKey,
-                    _publicKeyPresence = true,
-                    Content = content.IsEmpty() ? string.Empty : content
-                };
-            }
-
-            public static Payload Empty => FromParameters(string.Empty);
+                _properties = PayloadSerializer.Deserialize(payload)
+            };
         }
     }
 }

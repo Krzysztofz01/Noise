@@ -1,69 +1,103 @@
 ﻿using Noise.Core.Abstraction;
 using Noise.Core.Extensions;
 using System;
-using System.Text;
+using System.Linq;
 
 namespace Noise.Core.Protocol
 {
-    public class Packet : IPacket
+    public class Packet<TPayload> : IPacket where TPayload : Payload<TPayload>, new()
     {
-        public PacketType Type { get; private set; }
-        public string Payload { get; private set; }
-        public Int32 Size => Payload.Length + Constants.MinimalPacketBytesSize;
+        private readonly PacketType _packetType;
+        private readonly byte[] _checksum;
+        private readonly byte[] _payload;
+        private readonly Int32 _size;
+
+        private Packet() { }
+        private Packet(PacketType packetType, byte[] checksum, byte[] payload, Int32 size)
+        {
+            _packetType = packetType;
+            _checksum = checksum;
+            _payload = payload;
+            _size = size;
+        }
+
+        public TPayload PeekPayload => Payload<TPayload>.Deserialize(_payload);
+
+        public static class Factory
+        {
+            public static Packet<TPayload> FromPayload(TPayload payload)
+            {
+                var serializedPayload = payload.Serialize();
+                Int32 size = Constants.PacketBaseSize + serializedPayload.Length;
+
+                if (size > Constants.MaximalPacketSize)
+                    throw new InvalidOperationException("The payload size is too large.");
+
+                return new Packet<TPayload>(
+                    payload.Type,
+                    payload.CalculateChecksum(),
+                    serializedPayload,
+                    size);
+            }
+
+            public static Packet<TPayload> FromBuffer(byte[] packetBuffer)
+            {
+                if (packetBuffer.Length < Constants.PacketBaseSize)
+                    throw new InvalidOperationException("Invalid buffer size. The packet may be corrupted.");
+
+                Int32 size = packetBuffer.ToInt32(0);
+
+                var packetType = (PacketType)packetBuffer.ToInt32(4);
+
+                var checksum = new byte[Constants.ChecksumByteBufferSize];
+                Array.Copy(packetBuffer, 8, checksum, 0, Constants.ChecksumByteBufferSize);
+
+                Int32 payloadSize = size - Constants.PacketBaseSize;
+                var payload = new byte[payloadSize];
+                Array.Copy(packetBuffer, 8 + Constants.ChecksumByteBufferSize, payload, 0, payloadSize);
+
+                var checksumCalculated = Payload<TPayload>.Deserialize(payload).CalculateChecksum();
+
+                if (!checksumCalculated.SequenceEqual(checksum))
+                    throw new InvalidOperationException("Checksum not matching. The packet may be corrupted.");
+
+                return new Packet<TPayload>(
+                    packetType,
+                    checksum,
+                    payload,
+                    size);
+            }
+        }
 
         public byte[] GetBytes()
         {
-            byte[] buffer = new byte[Size + 4];
+            var buffer = new byte[_size];
 
-            Size.ToLowEndianByteBuffer().CopyTo(buffer, 0);
-            ((Int32)Type).ToLowEndianByteBuffer().CopyTo(buffer, 4);
-            Encoding.ASCII.GetBytes(Payload).CopyTo(buffer, 8);
+            _size.ToLowEndianByteBuffer().CopyTo(buffer, 0);
+
+            ((Int32)_packetType).ToLowEndianByteBuffer().CopyTo(buffer, 4);
+            
+            _checksum.CopyTo(buffer, 8);
+
+            _payload.CopyTo(buffer, 8 + Constants.ChecksumByteBufferSize);
 
             return buffer;
         }
 
-        private static void ValidatePacketSize(Int32 size)
+        public override bool Equals(object obj)
         {
-            if (size + 4 > Constants.MaximalPacketBytesSize)
-                throw new ArgumentException("The given arguments created a packet that is outside the size limits.");
+            var other = (Packet<TPayload>)obj;
+
+            return other is not null &&
+                _checksum.SequenceEqual(other._checksum) &&
+                _payload.SequenceEqual(other._payload) &&
+                other._size == _size &&
+                other._packetType == _packetType;
         }
 
-        private Packet() { }
-        public static class Factory
+        public override int GetHashCode()
         {
-            public static Packet FromParameters(PacketType type, string encryptedSerializedPayload)
-            {
-                var packet = new Packet
-                {
-                    Type = type,
-                    Payload = encryptedSerializedPayload
-                };
-
-                ValidatePacketSize(packet.Size);
-
-                return packet;
-            }
-
-            public static Packet FromBuffer(byte[] buffer)
-            {
-                if (buffer.Length < Constants.MinimalPacketBytesSize)
-                    throw new ArgumentException("Invalid buffer size. The packet may be corrupted.", nameof(buffer));
-
-                Int32 length = buffer.ToInt32(0);
-
-                var packet = new Packet
-                {
-                    Type = (PacketType)buffer.ToInt32(4),
-                    Payload = Encoding.ASCII.GetString(buffer, 8, (length - Constants.MinimalPacketBytesSize))
-                };
-
-                if (packet.Size != length)
-                    throw new ArithmeticException("Invlid packet size after buffer resolving. The packet may be corrupted.");
-
-                ValidatePacketSize(packet.Size);
-
-                return packet;
-            }
+            return HashCode.Combine(_checksum, _payload, _size, _packetType);
         }
     }
 }
