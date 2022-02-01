@@ -1,5 +1,6 @@
 ﻿using Noise.Core.Protocol;
 using System;
+using System.Collections.Generic;
 using System.Text;
 using Xunit;
 
@@ -8,6 +9,75 @@ namespace Noise.Core.Test
     public class ProtocolTests
     {
         [Fact]
+        public void PayloadSerializerShouldSerializeAndDeserializePayloadDictionary()
+        {
+            var payload = new Dictionary<string, string>()
+            {
+                { "Hello", "World" },
+                { "Foo", "Bar"}
+            };
+
+            var serializedPayload = PayloadSerializer.Serialize(payload);
+
+            var deserializedPayload = PayloadSerializer.Deserialize(serializedPayload);
+
+            Assert.Equal(payload, deserializedPayload);
+            Assert.NotNull(deserializedPayload);
+        }
+
+        [Fact]
+        public void PacketWithPingPayloadShouldCreateSerializeAndDeserialize()
+        {
+            var payload = PingPayload.Factory.Create();
+            var packet = Packet<PingPayload>.Factory.FromPayload(payload);
+
+            Assert.NotNull(packet);
+
+            var packetBuffer = packet.GetBytes();
+            var packetDeserialized = Packet<PingPayload>.Factory.FromBuffer(packetBuffer);
+
+            Assert.NotNull(packetDeserialized);
+            Assert.Equal(packet, packetDeserialized);
+
+            var payloadDeserialized = packetDeserialized.PeekPayload;
+
+            Assert.Equal(payload.Serialize(), payloadDeserialized.Serialize());
+        }
+
+        [Fact]
+        public void PacketWithSignaturePayloadShouldCreateSerializeAndDeserialize()
+        {
+            string signature = Guid.NewGuid().ToString();
+
+            var payload = SignaturePayload.Factory.Create(signature);
+            var packet = Packet<SignaturePayload>.Factory.FromPayload(payload);
+
+            Assert.NotNull(packet);
+
+            var packetBuffer = packet.GetBytes();
+            var packetDeserialized = Packet<SignaturePayload>.Factory.FromBuffer(packetBuffer);
+
+            Assert.NotNull(packetDeserialized);
+            Assert.Equal(packet, packetDeserialized);
+
+            var payloadDeserialized = packetDeserialized.PeekPayload;
+
+            Assert.Equal(payload.Serialize(), payloadDeserialized.Serialize());
+            Assert.Equal(signature, payloadDeserialized.Signature);
+        }
+
+        [Fact]
+        public void PacketWithSignaurePayloadShouldThrowOnInvalidData()
+        {
+            string signature = null;
+
+            Assert.Throws<InvalidOperationException>(() =>
+            {
+                SignaturePayload.Factory.Create(signature);
+            });
+        }
+
+        /*[Fact]
         public void PacketPayloadShouldCreateFromParametersWithPublicKey()
         {
             string publicKey = MockupPublicKey();
@@ -160,6 +230,6 @@ namespace Noise.Core.Test
             StringBuilder sb = new(string.Empty);
             for (int i = 0; i < Constants.PublicKeyStringSize; i++) sb.Append('A');
             return sb.ToString();
-        }
+        }*/
     }
 }
