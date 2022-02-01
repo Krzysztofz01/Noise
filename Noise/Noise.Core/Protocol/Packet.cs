@@ -5,6 +5,17 @@ using System.Linq;
 
 namespace Noise.Core.Protocol
 {
+    public class Packet
+    {
+        public static class Factory
+        {
+            public static Packet<TPayload> FromBuffer<TPayload>(byte[] packetBuffer) where TPayload : Payload<TPayload>, new()
+            {
+                return Packet<TPayload>.Factory.FromBuffer(packetBuffer);
+            }
+        }
+    }
+
     public class Packet<TPayload> : IPacket where TPayload : Payload<TPayload>, new()
     {
         private readonly PacketType _packetType;
@@ -40,7 +51,7 @@ namespace Noise.Core.Protocol
                     size);
             }
 
-            public static Packet<TPayload> FromBuffer(byte[] packetBuffer)
+            internal static Packet<TPayload> FromBuffer(byte[] packetBuffer)
             {
                 if (packetBuffer.Length < Constants.PacketBaseSize)
                     throw new InvalidOperationException("Invalid buffer size. The packet may be corrupted.");
@@ -56,10 +67,19 @@ namespace Noise.Core.Protocol
                 var payload = new byte[payloadSize];
                 Array.Copy(packetBuffer, 8 + Constants.ChecksumByteBufferSize, payload, 0, payloadSize);
 
-                var checksumCalculated = Payload<TPayload>.Deserialize(payload).CalculateChecksum();
+                var deserializedPayload = Payload<TPayload>.Deserialize(payload);
+
+                deserializedPayload.Validate();
+
+                var checksumCalculated = deserializedPayload.CalculateChecksum();
 
                 if (!checksumCalculated.SequenceEqual(checksum))
                     throw new InvalidOperationException("Checksum not matching. The packet may be corrupted.");
+
+                var deserializedType = deserializedPayload.Type;
+
+                if (packetType != deserializedType)
+                    throw new InvalidOperationException("Packet nad payload type not matching. The packet may be corrupted.");
 
                 return new Packet<TPayload>(
                     packetType,

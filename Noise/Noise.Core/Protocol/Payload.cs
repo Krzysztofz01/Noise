@@ -31,7 +31,7 @@ namespace Noise.Core.Protocol
             _properties.Add(key, value);
         }
 
-        protected abstract void Validate();
+        public abstract void Validate();
 
         public static TPayload Deserialize(byte[] payload)
         {
