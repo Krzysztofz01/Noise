@@ -1,4 +1,5 @@
 ﻿using Noise.Core.Hashing;
+using System.Text;
 using Xunit;
 
 namespace Noise.Core.Test
@@ -6,12 +7,13 @@ namespace Noise.Core.Test
     public class HashingTests
     {
         [Fact]
-        public void FastHandlerShouldHashSameInputSameOutput()
+        public void FastHandlerShouldHashSameInputSameOutputToBytes()
         {
             var plainData = "Hello World!";
+            var plainDataBytes = Encoding.UTF8.GetBytes(plainData);
 
-            var firstHash = FastHashingHandler.Hash(plainData);
-            var secondHash = FastHashingHandler.Hash(plainData);
+            var firstHash = SHA1HashingHandler.HashToBytes(plainDataBytes);
+            var secondHash = SHA1HashingHandler.HashToBytes(plainDataBytes);
 
             Assert.NotNull(firstHash);
             Assert.NotNull(secondHash);
@@ -20,13 +22,47 @@ namespace Noise.Core.Test
         }
 
         [Fact]
-        public void FastHandlerShouldHashDifferentInputDifferentOutput()
+        public void FastHandlerShouldHashSameInputSameOutputToBase64()
+        {
+            var plainData = "Hello World!";
+            var plainDataBytes = Encoding.UTF8.GetBytes(plainData);
+
+            var firstHash = SHA1HashingHandler.HashToBase64(plainDataBytes);
+            var secondHash = SHA1HashingHandler.HashToBase64(plainDataBytes);
+
+            Assert.NotNull(firstHash);
+            Assert.NotNull(secondHash);
+
+            Assert.Equal(firstHash, secondHash);
+        }
+
+        [Fact]
+        public void FastHandlerShouldHashDifferentInputDifferentOutputToBytes()
         {
             var firstPlainData = "Hello World!";
+            var firstPlainDataBytes = Encoding.UTF8.GetBytes(firstPlainData);
             var secondPlainData = "Hello again!";
+            var secondPlainDataBytes = Encoding.UTF8.GetBytes(secondPlainData);
 
-            var firstHash = FastHashingHandler.Hash(firstPlainData);
-            var secondHash = FastHashingHandler.Hash(secondPlainData);
+            var firstHash = SHA1HashingHandler.HashToBytes(firstPlainDataBytes);
+            var secondHash = SHA1HashingHandler.HashToBytes(secondPlainDataBytes);
+
+            Assert.NotNull(firstHash);
+            Assert.NotNull(secondHash);
+
+            Assert.NotEqual(firstHash, secondHash);
+        }
+
+        [Fact]
+        public void FastHandlerShouldHashDifferentInputDifferentOutputToBase64()
+        {
+            var firstPlainData = "Hello World!";
+            var firstPlainDataBytes = Encoding.UTF8.GetBytes(firstPlainData);
+            var secondPlainData = "Hello again!";
+            var secondPlainDataBytes = Encoding.UTF8.GetBytes(secondPlainData);
+
+            var firstHash = SHA1HashingHandler.HashToBase64(firstPlainDataBytes);
+            var secondHash = SHA1HashingHandler.HashToBase64(secondPlainDataBytes);
 
             Assert.NotNull(firstHash);
             Assert.NotNull(secondHash);
