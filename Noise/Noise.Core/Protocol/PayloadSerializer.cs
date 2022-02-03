@@ -14,7 +14,7 @@ namespace Noise.Core.Protocol
             foreach (var property in payload)
             {
                 payloadBuilder.Append(property.Key);
-                payloadBuilder.Append('=');
+                payloadBuilder.Append('@');
                 payloadBuilder.Append(property.Value);
                 payloadBuilder.Append(';');
             }
@@ -28,7 +28,7 @@ namespace Noise.Core.Protocol
 
             return decodedPayload
                 .Split(';', StringSplitOptions.RemoveEmptyEntries)
-                .Select(p => p.Split('=', StringSplitOptions.None))
+                .Select(p => p.Split('@', StringSplitOptions.None))
                 .ToDictionary(k => k.First(), v => v.Last());
         }
     }
