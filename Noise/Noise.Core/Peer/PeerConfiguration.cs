@@ -153,12 +153,13 @@ namespace Noise.Core.Peer
 
             public static PeerConfiguration Initialize()
             {
-                var aeh = new AsymmetricEncryptionHandler();
+                var privateKey = AsymmetricEncryptionHandler.InitializePrivateKey();
+                var publicKey = AsymmetricEncryptionHandler.GetPublicKeyBase64(privateKey);
 
                 return new PeerConfiguration
                 {
-                    PrivateKeyXml = aeh.GetPrivateKey(),
-                    PublicKey = aeh.GetPublicKey(),
+                    PrivateKeyXml = privateKey,
+                    PublicKey = publicKey,
                     VerboseMode = false,
                 };
             }
