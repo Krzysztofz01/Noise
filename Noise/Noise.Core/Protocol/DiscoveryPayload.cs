@@ -1,7 +1,5 @@
 ﻿using Noise.Core.Extensions;
 using System;
-using System.Collections.Generic;
-using System.Text.Json;
 
 namespace Noise.Core.Protocol
 {
@@ -9,17 +7,16 @@ namespace Noise.Core.Protocol
     {
         private const string _propPublicKeyCollection = "p";
         private const string _propEndpointCollection = "e";
+        private const string _propIdentityProve = "s";
 
         [Obsolete("Use the DiscoveryPayload.Factory.Create method create a new payload instance.")]
         public DiscoveryPayload() : base() { }
 
         public override PacketType Type => PacketType.DISCOVERY;
 
-        public IEnumerable<string> PublicKeys =>
-            JsonSerializer.Deserialize<IEnumerable<string>>(Properties[_propPublicKeyCollection]);
-
-        public IEnumerable<string> Endpoints =>
-            JsonSerializer.Deserialize<IEnumerable<string>>(Properties[_propEndpointCollection]);
+        public string PublicKeys => Properties[_propPublicKeyCollection];
+        public string Endpoints => Properties[_propEndpointCollection];
+        public string IdentityProve => Properties[_propIdentityProve];
 
         public override void Validate()
         {
@@ -39,18 +36,13 @@ namespace Noise.Core.Protocol
         #pragma warning disable CS0618
         public static class Factory
         {
-            public static DiscoveryPayload Create(IEnumerable<string> publicKeys, IEnumerable<string> endpoints)
+            public static DiscoveryPayload Create(string serializedPublicKeys, string serializedEndpoints, string identityProveSignature)
             {
-                if (publicKeys is null) throw new ArgumentNullException(nameof(publicKeys));
-                if (endpoints is null) throw new ArgumentNullException(nameof(endpoints));
-
-                var serializedPublicKeys = JsonSerializer.Serialize(publicKeys);
-                var serializedEndpoints = JsonSerializer.Serialize(endpoints);
-
                 var payload = new DiscoveryPayload();
 
                 payload.InsertProperty(_propPublicKeyCollection, serializedPublicKeys);
                 payload.InsertProperty(_propEndpointCollection, serializedEndpoints);
+                payload.InsertProperty(_propIdentityProve, identityProveSignature);
 
                 payload.Validate();
                 return payload;
