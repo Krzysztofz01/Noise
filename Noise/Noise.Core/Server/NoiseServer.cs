@@ -1,10 +1,9 @@
 ﻿using Noise.Core.Abstraction;
-using Noise.Core.Events;
 using Noise.Core.Peer;
 using Noise.Core.Protocol;
+using Noise.Core.Server.Events;
 using System;
-using System.Collections.Generic;
-using System.Linq;
+using System.Collections.Concurrent;
 using System.Net;
 using System.Net.Sockets;
 using System.Threading;
@@ -15,229 +14,211 @@ namespace Noise.Core.Server
     public class NoiseServer : INoiseServer
     {
         private readonly IOutput _output;
-        private readonly IPacketService _packetService;
         private readonly PeerConfiguration _peerConfiguration;
+        private readonly NoiseServerConfiguration _noiseServerConfiguration;
 
-        private readonly bool _verboseMode;
+        public event EventHandler<DiscoveryReceivedEventArgs> OnDiscoveryReceived;
+        public event EventHandler<MessageReceivedEventArgs> OnMessageReceived;
+        public event EventHandler<PeerConnectedEventArgs> OnPeerConnected;
+        public event EventHandler<PeerDisconnectedEventArgs> OnPeerDisconnected;
+        public event EventHandler<PingReceivedEventArgs> OnPingReceived;
+        public event EventHandler<SignatureReceivedEventArgs> OnSignatureReceived;
 
-        private TcpListener tcpListener;
-        private bool _disposed = false;
+        private ConcurrentDictionary<string, PeerMetadata> _peers;
+        private ConcurrentDictionary<string, DateTime> _peersLastSeen;
+        private ConcurrentDictionary<string, DateTime> _peersTimedout;
 
-        public event EventHandler<ClientDisconnectedEventsArgs> OnClientDisconnected;
-        public event EventHandler<PacketPairReceivedEventsArgs> OnMessageReceived;
-        public event EventHandler<PacketReceivedEventsArgs> OnPingReceived;
-        public event EventHandler<PacketPairReceivedEventsArgs> OnDiscoveryReceived;
+        private TcpListener _tcpListener;
+        private bool _isListening;
+
+        private CancellationTokenSource _tokenSource;
+        private CancellationToken _token;
 
         private NoiseServer() { }
-        public NoiseServer(IOutput output, IPacketService packetService, PeerConfiguration peerConfiguration)
+        public NoiseServer(IOutput output, PeerConfiguration peerConfiguration, NoiseServerConfiguration noiseServerConfiguration)
         {
-            OnPingReceived += PingEventHandler;
-            OnDiscoveryReceived += DiscoveryEventHandler;
-            OnMessageReceived += MessageEventHandler;
-            OnClientDisconnected += ClientDisconnectedEventHandler;
-
             _output = output ??
                 throw new ArgumentNullException(nameof(output));
-
-            _packetService = packetService ??
-                throw new ArgumentNullException(nameof(packetService));
 
             _peerConfiguration = peerConfiguration ??
                 throw new ArgumentNullException(nameof(peerConfiguration));
 
-            _verboseMode = _peerConfiguration.VerboseMode;
+            _noiseServerConfiguration = noiseServerConfiguration ??
+                throw new ArgumentNullException(nameof(noiseServerConfiguration));
+
+            OnDiscoveryReceived += DiscoveryReceivedEventHandler;
+            OnMessageReceived += MessageReceivedEventHandler;
+            OnPeerConnected += PeerConnectedEventHandler;
+            OnPeerDisconnected += PeerDisconnectedEventHandler;
+            OnPingReceived += PingReceivedEventHandler;
+            OnSignatureReceived += SignatureReceivedEventHandler;
+
+            _peers = new ConcurrentDictionary<string, PeerMetadata>();
+            _peersLastSeen = new ConcurrentDictionary<string, DateTime>();
+            _peersTimedout = new ConcurrentDictionary<string, DateTime>();
         }
 
-        private void MessageEventHandler(object sender, PacketPairReceivedEventsArgs e)
+        private void PeerConnectedEventHandler(object sender, PeerConnectedEventArgs e)
         {
-            string endpoint = e.Client.Client.RemoteEndPoint.ToString();
-
-            var (publicKey, message) = _packetService.RetriveMessagePacket(e.KeyPacket, e.CipherPacket, _peerConfiguration.PrivateKeyXml);
-
-            if (publicKey is not null && message is not null)
-            {
-                if (!_peerConfiguration.IsPeerKnown(publicKey))
-                {
-                    _peerConfiguration.InsertPeers(new List<string> { publicKey });
-                }
-
-                if (!_peerConfiguration.IsEndpointKnown(endpoint))
-                {
-                    _peerConfiguration.InsertEndpoints(new List<string> { endpoint });
-                }
-
-                string alias = _peerConfiguration.GetPeerByKey(publicKey).Alias;
-
-                _output.WriteMessage(publicKey, message, endpoint, alias);
-                return;
-            }
-
-            if (_verboseMode)
-            {
-                _output.WriteLog($"Message decryption from {endpoint} failed.");
-            }
+            throw new NotImplementedException();
         }
 
-        private void DiscoveryEventHandler(object sender, PacketPairReceivedEventsArgs e)
+        private void SignatureReceivedEventHandler(object sender, SignatureReceivedEventArgs e)
         {
-            string endpoint = e.Client.Client.RemoteEndPoint.ToString();
-
-            var (publicKeys, endpoints) = _packetService.RetriveDiscoveryPacket(e.KeyPacket, e.CipherPacket, _peerConfiguration.PrivateKeyXml);
-
-            if (publicKeys is not null && endpoints is not null)
-            {
-                _peerConfiguration.InsertPeers(publicKeys);
-                _peerConfiguration.InsertEndpoints(endpoints);
-
-                if (_verboseMode)
-                {
-                    _output.WriteLog($"Discovered {publicKeys.Count()} identites and {endpoints.Count()} peers via {endpoint} peer.");
-                    return;
-                }
-                
-                _output.WriteLog("New peers discovered!");
-                return;
-            }
-
-            if (_verboseMode)
-            {
-                _output.WriteLog($"Discovery decryption from {endpoint} failed.");
-            }
+            throw new NotImplementedException();
         }
 
-        private void PingEventHandler(object sender, PacketReceivedEventsArgs e)
+        private void PingReceivedEventHandler(object sender, PingReceivedEventArgs e)
         {
-            _output.WritePing(e.Client.Client.RemoteEndPoint.ToString());
+            throw new NotImplementedException();
+        }
+
+        private void PeerDisconnectedEventHandler(object sender, PeerDisconnectedEventArgs e)
+        {
+            throw new NotImplementedException();
+        }
+
+        private void MessageReceivedEventHandler(object sender, MessageReceivedEventArgs e)
+        {
+            throw new NotImplementedException();
+        }
+
+        private void DiscoveryReceivedEventHandler(object sender, DiscoveryReceivedEventArgs e)
+        {
+            throw new NotImplementedException();
         }
 
         public void Dispose()
         {
-            if (tcpListener is not null)
-            {
-                tcpListener.Stop();
-                _disposed = true;
-                tcpListener = null;
-            }
-
-            GC.SuppressFinalize(this);
+            throw new NotImplementedException();
         }
 
-        public async Task StartAsync(CancellationToken cancellationToken)
+        public Task StartAsync(CancellationToken cancellationToken)
         {
-            tcpListener = new TcpListener(IPAddress.Any, Constants.ProtocolPort);
-            tcpListener.Start();
+            _output.WriteLog("Starting up the server...");
+            if (_isListening) throw new InvalidOperationException("The server is already running.");
 
-            cancellationToken.Register(tcpListener.Stop);
+            _tcpListener = new TcpListener(IPAddress.Any, Constants.ProtocolPort);
 
-            while (!cancellationToken.IsCancellationRequested && !_disposed)
+            ApplySocketSettings();
+
+            _tcpListener.Start();
+            _isListening = true;
+
+            _tokenSource = new CancellationTokenSource();
+            _token = _tokenSource.Token;
+
+            _output.WriteLog("Server started. Waiting for incoming connections.");
+            return Task.Run(() => AcceptConnections(), _token);
+        }
+
+        public void Stop()
+        {
+            _output.WriteLog("Shuting down the sever...");
+            if (!_isListening) throw new InvalidOperationException("The server is not running.");
+
+            _isListening = false;
+            _tcpListener.Stop();
+            _tokenSource.Cancel();
+
+            _output.WriteLog("Server stopped successful.");
+        }
+
+        private async Task AcceptConnections()
+        {
+            while (!_token.IsCancellationRequested)
             {
+                PeerMetadata peer = null;
+
                 try
                 {
-                    TcpClient client = await tcpListener.AcceptTcpClientAsync();
+                    var peerClient = await _tcpListener.AcceptTcpClientAsync().ConfigureAwait(false);
+                    string peerEndpoint = peerClient.Client.RemoteEndPoint.ToString();
 
-                    var clientTask = HandleClientConnection(client, cancellationToken)
-                        .ContinueWith(callback => client.Dispose(), cancellationToken);
+                    peer = new PeerMetadata(peerClient);
+
+                    _peers.TryAdd(peerEndpoint, peer);
+                    _peersLastSeen.TryAdd(peerEndpoint, DateTime.Now);
+
+                    OnPeerConnected?.Invoke(this, new PeerConnectedEventArgs
+                    {
+                        PeerEndpoint = peerClient.Client.RemoteEndPoint
+                    });
+
+                    ApplySocketSettings(peerClient);
+
+                    CancellationTokenSource linkedTokenSource = CancellationTokenSource.CreateLinkedTokenSource(peer.Token, _token);
+                    Task unawaitedHandling = Task.Run(() => DataReceiver(peer), linkedTokenSource.Token);
                 }
-                catch (SocketException) when (cancellationToken.IsCancellationRequested)
+                catch (TaskCanceledException)
                 {
-                    _output.WriteLog("The listening session is ended.");
+                    _isListening = false;
+                    if (peer is not null) peer.Dispose();
+                    return;
+                }
+                catch (OperationCanceledException)
+                {
+                    _isListening = false;
+                    if (peer is not null) peer.Dispose();
+                    return;
+                }
+                catch (ObjectDisposedException)
+                {
+                    if (peer != null) peer.Dispose();
+                    continue;
                 }
                 catch (Exception ex)
                 {
-                    _output.WriteException("Error during communication resolving.", ex);
+                    if (peer != null) peer.Dispose();
+                    _output.WriteException("Exception while awaiting connections.", ex);
+                    continue;
                 }
             }
+
+            _isListening = false;
         }
 
-        #pragma warning disable CS1998 // Async method lacks 'await' operators and will run synchronously
-        private async Task HandleClientConnection(TcpClient client, CancellationToken ct)
-        #pragma warning restore CS1998 // Async method lacks 'await' operators and will run synchronously
+        private async Task DataReceiver(PeerMetadata peerMetadata)
         {
-            // Packet buffers
-            IPacket keyPacket = null;
-            IPacket cipherPacket = null;
-            PacketType? cipherPacketType = null;
+            throw new NotImplementedException();
+        }
 
-            while (client.Client.Connected && !ct.IsCancellationRequested && !_disposed)
+        private void ApplySocketSettings()
+        {
+            try
             {
-                try
+                if (_noiseServerConfiguration.EnableKeepAlive)
                 {
-                    // Receive all the data from the network stream
-                    var networkStream = client.GetStream();
-
-                    var buffer = new byte[Constants.MaximalPacketBytesSize];
-                    int bytes;
-
-                    do
-                    {
-                        bytes = networkStream.Read(buffer, 0, buffer.Length);
-                    } while (bytes == 0);
-
-                    var result = new byte[bytes];
-                    Array.Copy(buffer, 0, result, 0, bytes);
-
-                    // Handle the stream as a packet after the data transmision is finished
-                    var packet = Packet.Factory.FromBuffer(result);
-
-                    // Select the correct action, depending on the packet type
-                    switch (packet.Type)
-                    {
-                        case PacketType.PING:
-                            OnPingReceived?.Invoke(this, new PacketReceivedEventsArgs
-                            {
-                                Client = client,
-                                Packet = packet
-                            });
-                            break;
-
-                        case PacketType.KEY:
-                            keyPacket = packet;
-                            break;
-
-                        case PacketType.MESSAGE:
-                            cipherPacket = packet;
-                            cipherPacketType = packet.Type;
-                            break;
-
-                        case PacketType.DISCOVERY:
-                            cipherPacket = packet;
-                            cipherPacketType = packet.Type;
-                            break;
-
-                        default:
-                            throw new ArgumentOutOfRangeException(nameof(packet), "Invalid packet type. The packet may be corrupted.");
-                    }
-
-                    // If ,,pair'' packets are obtained, raise the correct event
-                    if (keyPacket is not null && cipherPacket is not null && cipherPacketType is not null)
-                    {
-                        var eventArgs = new PacketPairReceivedEventsArgs
-                        {
-                            Client = client,
-                            CipherPacket = (Packet)cipherPacket,
-                            KeyPacket = (Packet)keyPacket
-                        };
-
-                        if (cipherPacketType.Value == PacketType.MESSAGE) OnMessageReceived?.Invoke(this, eventArgs);
-                        if (cipherPacketType.Value == PacketType.DISCOVERY) OnDiscoveryReceived?.Invoke(this, eventArgs);
-                    }
-                }
-                catch
-                {
-                    if (!client.Client.Connected)
-                    {
-                        OnClientDisconnected?.Invoke(this, new ClientDisconnectedEventsArgs { Endpoint = client.Client.LocalEndPoint });
-                        return;
-                    }
-
-                    throw;
-                }
+                    _tcpListener.Server.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.KeepAlive, true);
+                    _tcpListener.Server.SetSocketOption(SocketOptionLevel.Tcp, SocketOptionName.TcpKeepAliveTime, _noiseServerConfiguration.KeepAliveTime);
+                    _tcpListener.Server.SetSocketOption(SocketOptionLevel.Tcp, SocketOptionName.TcpKeepAliveInterval, _noiseServerConfiguration.KeepAliveInterval);
+                    _tcpListener.Server.SetSocketOption(SocketOptionLevel.Tcp, SocketOptionName.TcpKeepAliveRetryCount, _noiseServerConfiguration.KeepAliveRetryCount);
+                }  
+            }
+            catch (Exception ex)
+            {
+                _output.WriteException("Invalid server configuration.", ex);
+                throw;
             }
         }
 
-        private void ClientDisconnectedEventHandler(object sender, ClientDisconnectedEventsArgs e)
+        private void ApplySocketSettings(TcpClient tcpClient)
         {
-            if (_verboseMode) _output.WriteLog($"{e.Endpoint} disonnected.");
+            try
+            {
+                if (_noiseServerConfiguration.EnableKeepAlive)
+                {
+                    tcpClient.Client.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.KeepAlive, true);
+                    tcpClient.Client.SetSocketOption(SocketOptionLevel.Tcp, SocketOptionName.TcpKeepAliveTime, _noiseServerConfiguration.KeepAliveTime);
+                    tcpClient.Client.SetSocketOption(SocketOptionLevel.Tcp, SocketOptionName.TcpKeepAliveInterval, _noiseServerConfiguration.KeepAliveInterval);
+                    tcpClient.Client.SetSocketOption(SocketOptionLevel.Tcp, SocketOptionName.TcpKeepAliveRetryCount, _noiseServerConfiguration.KeepAliveRetryCount);
+                }
+            }
+            catch (Exception ex)
+            {
+                _output.WriteException("Invalid server configuration.", ex);
+                throw;
+            }
         }
     }
 }
