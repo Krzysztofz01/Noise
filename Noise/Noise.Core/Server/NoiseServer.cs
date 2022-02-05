@@ -1,9 +1,11 @@
 ﻿using Noise.Core.Abstraction;
+using Noise.Core.Extensions;
 using Noise.Core.Peer;
 using Noise.Core.Protocol;
 using Noise.Core.Server.Events;
 using System;
 using System.Collections.Concurrent;
+using System.IO;
 using System.Net;
 using System.Net.Sockets;
 using System.Threading;
@@ -142,7 +144,7 @@ namespace Noise.Core.Server
 
                     OnPeerConnected?.Invoke(this, new PeerConnectedEventArgs
                     {
-                        PeerEndpoint = peerClient.Client.RemoteEndPoint
+                        PeerEndpoint = peerEndpoint
                     });
 
                     ApplySocketSettings(peerClient);
@@ -178,7 +180,112 @@ namespace Noise.Core.Server
             _isListening = false;
         }
 
-        private async Task DataReceiver(PeerMetadata peerMetadata)
+        private async Task DataReceiver(PeerMetadata peer)
+        {
+            string ipPort = peer.IpPort;
+            _output.WriteLog($"Data reciver started for peer: ${ipPort}");
+
+            CancellationTokenSource linkedCts = CancellationTokenSource.CreateLinkedTokenSource(_token, peer.Token);
+
+            while (true)
+            {
+                try
+                {
+                    if (!IsPeerConnected(peer.TcpClient))
+                    {
+                        _output.WriteLog($"Peer: {ipPort} disconnected.");
+                        break;
+                    }
+
+                    if (peer.Token.IsCancellationRequested)
+                    {
+                        _output.WriteLog($"Peer: {ipPort} requested the connection cancellation.");
+                        break;
+                    }
+
+                    byte[] dataBuffer = await DataReadAsync(peer, linkedCts.Token).ConfigureAwait(false);
+                    if (dataBuffer == null)
+                    {
+                        await Task.Delay(10, linkedCts.Token).ConfigureAwait(false);
+                        continue;
+                    }
+                    else
+                    {
+                        Task unawaited = Task.Run(() =>
+                        {
+                            switch (PeekPacketType(dataBuffer))
+                            {
+                                case PacketType.MESSAGE: OnMessageReceived?.Invoke(this, new MessageReceivedEventArgs(dataBuffer)); break;
+                                case PacketType.DISCOVERY: OnDiscoveryReceived?.Invoke(this, new DiscoveryReceivedEventArgs(dataBuffer)); break;
+                                case PacketType.SIGNATURE: OnSignatureReceived?.Invoke(this, new SignatureReceivedEventArgs(dataBuffer)); break;
+                                case PacketType.PING: OnPingReceived?.Invoke(this, new PingReceivedEventArgs()); break;
+
+                                default: throw new ArgumentException("Invalid packet type. No handler defined.");
+                            }
+                        }, linkedCts.Token);
+                        UpdatePeerLastSeen(peer.IpPort);
+                    }
+                }
+                catch (IOException)
+                {
+                    _output.WriteLog($"Data receive for peer: {ipPort} canceled. Peer disconnected.");
+                }
+                catch (SocketException)
+                {
+                    _output.WriteLog($"Data receive for peer: {ipPort} canceled. Peer disconnected.");
+                }
+                catch (TaskCanceledException)
+                {
+                    _output.WriteLog($"Data receive for peer: {ipPort} canceled. Task canceled.");
+                }
+                catch (ObjectDisposedException)
+                {
+                    _output.WriteLog($"Data receive for peer: {ipPort} canceled. Task disposed.");
+                }
+                catch (Exception ex)
+                {
+                    _output.WriteException("Data receive failure.", ex);
+                    break;
+                }
+            }
+
+            _output.WriteLog($"Data receive terminated for peer: {ipPort}");
+
+            if (_peersTimedout.ContainsKey(peer.IpPort))
+            {
+                OnPeerDisconnected?.Invoke(this, new PeerDisconnectedEventArgs
+                {
+                    PeerDisconnectReason = PeerDisconnectReason.Timeout,
+                    PeerEndpoint = ipPort
+                });
+            }
+            else
+            {
+                OnPeerDisconnected?.Invoke(this, new PeerDisconnectedEventArgs
+                {
+                    PeerDisconnectReason = PeerDisconnectReason.Normal,
+                    PeerEndpoint = ipPort
+                });
+            }
+
+            _peers.TryRemove(ipPort, out _);
+            _peersLastSeen.TryRemove(ipPort, out _);
+            _peersTimedout.TryRemove(ipPort, out _);
+
+            if (peer is not null) peer.Dispose();
+        }
+
+        private void UpdatePeerLastSeen(string ipPort)
+        {
+            throw new NotImplementedException();
+        }
+
+        private async Task<byte[]> DataReadAsync(PeerMetadata peer, CancellationToken token)
+        {
+            throw new NotImplementedException();
+        }
+
+        private bool IsPeerConnected(TcpClient tcpClient)
         {
             throw new NotImplementedException();
         }
@@ -219,6 +326,14 @@ namespace Noise.Core.Server
                 _output.WriteException("Invalid server configuration.", ex);
                 throw;
             }
+        }
+
+        private static PacketType PeekPacketType(byte[] packetBuffer)
+        {
+            if (packetBuffer.Length < Constants.PacketBaseSize)
+                throw new ArgumentException("Invalid buffer size, the packet may be corrupted.");
+
+            return (PacketType)packetBuffer.ToInt32(4);
         }
     }
 }
