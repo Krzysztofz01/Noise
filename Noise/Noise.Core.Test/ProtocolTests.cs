@@ -280,5 +280,36 @@ namespace Noise.Core.Test
 
             Assert.NotNull(pingPacket);
         }
+
+        [Fact]
+        public void PacketBufferAndQueueBilderShouldBuild()
+        {
+            var pingPayload = PingPayload.Factory.Create();
+            var pingPacket = Packet<PingPayload>.Factory.FromPayload(pingPayload);
+
+            string publicKeys = Guid.NewGuid().ToString();
+            string endpoints = Guid.NewGuid().ToString();
+            string signature = Guid.NewGuid().ToString();
+
+            var discoveryPayload = DiscoveryPayload.Factory.Create(publicKeys, endpoints, signature);
+            var discoveryPacket = Packet<DiscoveryPayload>.Factory.FromPayload(discoveryPayload);
+
+            var queueBuffer = PacketBufferStreamBuilder
+                .Create()
+                .InsertPacket(pingPacket)
+                .InsertPacket(discoveryPacket)
+                .Build();
+
+            var byteQueue = PacketBufferQueueBuilder
+                .Create()
+                .InsertBuffer(queueBuffer)
+                .Build();
+
+            var builtPingPacket = Packet.Factory.FromBuffer<PingPayload>(byteQueue.Dequeue());
+            var builtDiscoveryPacket = Packet.Factory.FromBuffer<DiscoveryPayload>(byteQueue.Dequeue());
+
+            Assert.Equal(pingPacket, builtPingPacket);
+            Assert.Equal(discoveryPacket, builtDiscoveryPacket);
+        }
     }
 }
