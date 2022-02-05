@@ -1,10 +1,9 @@
-﻿using System;
-
-namespace Noise.Core.Server.Events
+﻿namespace Noise.Core.Server.Events
 {
-    public class DiscoveryReceivedEventArgs : EventArgs
+    public class DiscoveryReceivedEventArgs : BufferQueueEventArgs
     {
-        public byte[] KeyPacketBuffer { get; set; }
-        public byte[] DiscoveryPacketBuffer { get; set; }
+        public DiscoveryReceivedEventArgs(byte[] packetBufferQueue) : base(packetBufferQueue)
+        {
+        }
     }
 }

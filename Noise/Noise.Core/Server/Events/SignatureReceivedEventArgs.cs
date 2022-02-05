@@ -1,9 +1,9 @@
-﻿using System;
-
-namespace Noise.Core.Server.Events
+﻿namespace Noise.Core.Server.Events
 {
-    public class SignatureReceivedEventArgs : EventArgs
+    public class SignatureReceivedEventArgs : BufferQueueEventArgs
     {
-        public byte[] SignaturePacketBuffer { get; set; }
+        public SignatureReceivedEventArgs(byte[] packetBufferQueue) : base(packetBufferQueue)
+        {
+        }
     }
 }

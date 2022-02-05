@@ -1,10 +1,16 @@
 ﻿using System;
-using System.Net;
 
 namespace Noise.Core.Server.Events
 {
     public class PeerDisconnectedEventArgs : EventArgs
     {
-        public EndPoint PeerEndpoint { get; set; }
+        public PeerDisconnectReason PeerDisconnectReason { get; set; }
+        public string PeerEndpoint { get; set; }
+    }
+
+    public enum PeerDisconnectReason
+    {
+        Normal = 0,
+        Timeout = 1
     }
 }

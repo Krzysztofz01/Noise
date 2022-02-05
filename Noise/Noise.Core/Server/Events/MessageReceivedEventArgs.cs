@@ -1,10 +1,9 @@
-﻿using System;
-
-namespace Noise.Core.Server.Events
+﻿namespace Noise.Core.Server.Events
 {
-    public class MessageReceivedEventArgs : EventArgs
+    public class MessageReceivedEventArgs : BufferQueueEventArgs
     {
-        public byte[] KeyPacketBuffer { get; set; }
-        public byte[] MessagePacketBuffer { get; set; }
+        public MessageReceivedEventArgs(byte[] packetBufferQueue) : base(packetBufferQueue)
+        {
+        }
     }
 }
