@@ -1,4 +1,5 @@
 ﻿using Noise.Core.Peer;
+using Noise.Core.Protocol;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -17,7 +18,7 @@ namespace Noise.Core.Test
 
             var deserializedPc = PeerConfiguration.Factory.Deserialize(serializedPc);
 
-            Assert.Equal(pc.PrivateKeyXml, deserializedPc.PrivateKeyXml);
+            Assert.Equal(pc.PrivateKey, deserializedPc.PrivateKey);
         }
 
         [Fact]
@@ -32,7 +33,10 @@ namespace Noise.Core.Test
                 "127.0.0.1"
             };
 
-            pc.InsertEndpoints(endpoints);
+            foreach (var endpoint in endpoints)
+            {
+                pc.InsertEndpoint(endpoint);
+            }
 
             var expectedCount = 2;
 
@@ -44,15 +48,11 @@ namespace Noise.Core.Test
         {
             var pc = MockUpPeerConfiguration();
 
-            var endpoints = new List<string>
-            {
-                "900.0.0.1",
-                "Hello World!"
-            };
+            var invalidEndpoint = "Hello World!";
 
             Assert.Throws<ArgumentException>(() =>
             {
-                pc.InsertEndpoints(endpoints);
+                pc.InsertEndpoint(invalidEndpoint);
             });
         }
 
@@ -61,18 +61,16 @@ namespace Noise.Core.Test
         {
             var pc = MockUpPeerConfiguration();
 
-            var keys = new List<string>
+            foreach (var _ in Enumerable.Range(0, 2))
             {
-                "AAA",
-                "BBB",
-                "AAA"
-            };
-
-            pc.InsertPeers(keys);
+                pc.InsertPeer(
+                    MockUpPeerConfiguration().PublicKey,
+                    MockUpPeerSignature());
+            }
 
             var expectedCount = 2;
 
-            Assert.Equal(expectedCount, pc.GetKeys().Count());
+            Assert.Equal(expectedCount, pc.GetPeers().Count());
         }
 
         [Fact]
@@ -80,15 +78,16 @@ namespace Noise.Core.Test
         {
             var pc = MockUpPeerConfiguration();
 
-            var key = "AAA";
+            var key = MockUpPeerConfiguration().PublicKey;
+            var signature = MockUpPeerSignature();
             var alias = "Hello World!";
 
-            pc.InsertKey(key, alias);
+            pc.InsertPeer(key, signature, alias);
 
-            Assert.Equal(key, pc.GetKeys().Single().PublicKey);
+            Assert.Equal(key, pc.GetPeers().Single().PublicKey);
 
             Assert.Equal(key, pc.GetPeerByAlias(alias).PublicKey);
-            Assert.Equal(alias, pc.GetPeerByKey(key).Alias);
+            Assert.Equal(alias, pc.GetPeerByPublicKey(key).Alias);
         }
 
         [Fact]
@@ -96,12 +95,13 @@ namespace Noise.Core.Test
         {
             var pc = MockUpPeerConfiguration();
 
-            var key = "AAA";
+            var key = MockUpPeerConfiguration().PublicKey;
+            var signature = MockUpPeerSignature();
             var alias = "Hello World!";
 
-            pc.InsertKey(key);
+            pc.InsertPeer(key, signature);
 
-            Assert.NotEqual(alias, pc.GetPeerByKey(key).Alias);
+            Assert.NotEqual(alias, pc.GetPeerByPublicKey(key).Alias);
             Assert.Throws<InvalidOperationException>(() =>
             {
                 pc.GetPeerByAlias(alias);
@@ -110,7 +110,7 @@ namespace Noise.Core.Test
             pc.InsertAlias(key, alias);
 
             Assert.Equal(key, pc.GetPeerByAlias(alias).PublicKey);
-            Assert.Equal(alias, pc.GetPeerByKey(key).Alias);
+            Assert.Equal(alias, pc.GetPeerByPublicKey(key).Alias);
         }
 
         [Fact]
@@ -118,7 +118,7 @@ namespace Noise.Core.Test
         {
             var pc = MockUpPeerConfiguration();
 
-            var key = "AAA";
+            var key = MockUpPeerConfiguration().PublicKey;
             var alias = "Hello World!";
 
             Assert.Throws<ArgumentNullException>(() =>
@@ -127,9 +127,62 @@ namespace Noise.Core.Test
             });
         }
 
+        [Fact]
+        public void PeerShouldTellIfEndpointIsKnown()
+        {
+            var pc = MockUpPeerConfiguration();
+
+            var knownEndpoint = "127.0.0.1";
+            var unknownEndpoint = "127.0.0.2";
+
+            pc.InsertEndpoint(knownEndpoint);
+
+            Assert.True(pc.IsEndpointKnown(knownEndpoint));
+            Assert.False(pc.IsEndpointKnown(unknownEndpoint));
+        }
+
+        [Fact]
+        public void PeerShouldTellIfPeerIsKnown()
+        {
+            var pc = MockUpPeerConfiguration();
+
+            var knownPeer = MockUpPeerConfiguration();
+            var unknownPeer = MockUpPeerConfiguration();
+
+            pc.InsertPeer(knownPeer.PublicKey, MockUpPeerSignature());
+
+            Assert.True(pc.IsPeerKnown(knownPeer.PublicKey));
+            Assert.False(pc.IsPeerKnown(unknownPeer.PublicKey));
+        }
+
+        [Fact]
+        public void PeerShouldGetKnownPeerByOrdinalNumber()
+        {
+            var pc = MockUpPeerConfiguration();
+
+            var firstKey = MockUpPeerConfiguration().PublicKey;
+            var firstSignature = MockUpPeerSignature();
+            pc.InsertPeer(firstKey, firstSignature);
+
+            var secondKey = MockUpPeerConfiguration().PublicKey;
+            var secondSignature = MockUpPeerSignature();
+            pc.InsertPeer(secondKey, secondSignature);
+
+            var actualFirstKey = pc.GetPeerByOrdinalNumberIdentifier(0).PublicKey;
+            var actualSecondKey = pc.GetPeerByOrdinalNumberIdentifier(1).PublicKey;
+
+            Assert.Equal(firstKey, actualFirstKey);
+            Assert.Equal(secondKey, actualSecondKey);
+        }
+
         public PeerConfiguration MockUpPeerConfiguration()
         {
             return PeerConfiguration.Factory.Initialize();
+        }
+
+        public string MockUpPeerSignature()
+        {
+            return SignatureBuilder.GenerateSignature();
         }
     }
 }

@@ -213,7 +213,7 @@ namespace Noise.Core.Test
             Assert.NotNull(signaturePacket);
             Assert.NotNull(receiversSignature);
 
-            var receivedSignature = phs.ReceiveIdentityProve(signaturePacket.GetBytes(), receiver.PrivateKeyXml);
+            var receivedSignature = phs.ReceiveIdentityProve(signaturePacket.GetBytes(), receiver.PrivateKey);
 
             Assert.NotNull(receivedSignature);
             Assert.Equal(receiversSignature, receivedSignature);
@@ -233,12 +233,12 @@ namespace Noise.Core.Test
             // Signature exchange: peer1->peer2
             var (signaturePacket, receiversSignature) = phs.CreateSignaturePacket(peer2.PublicKey);
             peer1SignatureCreatedForPeer2 = receiversSignature;
-            peer2SignautreReceivedFromPeer1 = phs.ReceiveIdentityProve(signaturePacket.GetBytes(), peer2.PrivateKeyXml);
+            peer2SignautreReceivedFromPeer1 = phs.ReceiveIdentityProve(signaturePacket.GetBytes(), peer2.PrivateKey);
 
             // Message exchange: peer2->peer1
             var message = "Hello World!";
             var (keyPacket, messagePacket) = phs.CreateMessagePackets(peer2SignautreReceivedFromPeer1, peer1.PublicKey, message);
-            var (receivedSignature, receivedMessage) = phs.ReceiveMessage(keyPacket.GetBytes(), messagePacket.GetBytes(), peer1.PrivateKeyXml);
+            var (receivedSignature, receivedMessage) = phs.ReceiveMessage(keyPacket.GetBytes(), messagePacket.GetBytes(), peer1.PrivateKey);
 
             Assert.Equal(message, receivedMessage);
             Assert.Equal(peer1SignatureCreatedForPeer2, receivedSignature);
@@ -260,11 +260,11 @@ namespace Noise.Core.Test
             // Signature exchange: peer1->peer2
             var (signaturePacket, receiversSignature) = phs.CreateSignaturePacket(peer2.PublicKey);
             peer1SignatureCreatedForPeer2 = receiversSignature;
-            peer2SignautreReceivedFromPeer1 = phs.ReceiveIdentityProve(signaturePacket.GetBytes(), peer2.PrivateKeyXml);
+            peer2SignautreReceivedFromPeer1 = phs.ReceiveIdentityProve(signaturePacket.GetBytes(), peer2.PrivateKey);
 
             // Discovery exchange: peer2->peer1
             var (keyPacket, discoveryPacket) = phs.CreateDiscoveryPackets(peer2SignautreReceivedFromPeer1, peer1.PublicKey, endpoints, publicKeys);
-            var (receivedEndpoint, receivedPublicKeys, receivedSignature) = phs.ReceiveDiscoveryCollections(keyPacket.GetBytes(), discoveryPacket.GetBytes(), peer1.PrivateKeyXml);
+            var (receivedEndpoint, receivedPublicKeys, receivedSignature) = phs.ReceiveDiscoveryCollections(keyPacket.GetBytes(), discoveryPacket.GetBytes(), peer1.PrivateKey);
             
             Assert.Equal(endpoints, receivedEndpoint);
             Assert.Equal(publicKeys, receivedPublicKeys);

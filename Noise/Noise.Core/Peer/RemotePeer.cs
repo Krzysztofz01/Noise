@@ -11,6 +11,7 @@ namespace Noise.Core.Peer
         public string PublicKey { get; init; }
         public string Alias { get; set; }
         public int Identifier { get; init; }
+        public string Signature { get; init; }
 
         public void SetAlias(string alias) => Alias = alias;
 
@@ -20,13 +21,14 @@ namespace Noise.Core.Peer
 
         public static class Factory
         {
-            public static RemotePeer FromParameters(string publicKey, int identifier, string alias = null)
+            public static RemotePeer FromParameters(string publicKey, int identifier, string signature, string alias = null)
             {
                 #pragma warning disable CS0618 // Type or member is obsolete
                 return new RemotePeer
                 {
                     PublicKey = publicKey,
                     Identifier = identifier,
+                    Signature = signature,
                     Alias = alias ?? _defaultAlias
                 };
                 #pragma warning restore CS0618 // Type or member is obsolete
