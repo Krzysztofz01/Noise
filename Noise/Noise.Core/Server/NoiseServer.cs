@@ -72,7 +72,7 @@ namespace Noise.Core.Server
 
         private void PingReceivedEventHandler(object sender, PingReceivedEventArgs e)
         {
-            throw new NotImplementedException();
+            _output.WritePing(e.PeerEndpoint);
         }
 
         private void PeerDisconnectedEventHandler(object sender, PeerDisconnectedEventArgs e)
@@ -92,7 +92,53 @@ namespace Noise.Core.Server
 
         public void Dispose()
         {
-            throw new NotImplementedException();
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+        private void Dispose(bool disposing)
+        {
+            if (disposing)
+            {
+                try
+                {
+                    if (_peers is not null && !_peers.IsEmpty)
+                    {
+                        foreach (var peer in _peers)
+                        {
+                            peer.Value.Dispose();
+                            _output.WriteLog($"Disposing the connection with: {peer.Key}");
+                        }
+                    }
+
+                    if (_tokenSource is not null)
+                    {
+                        if (!_tokenSource.IsCancellationRequested)
+                            _tokenSource.Cancel();
+
+                        _tokenSource.Dispose();
+                    }
+
+                    if (_tcpListener is not null && _tcpListener.Server is not null)
+                    {
+                        _tcpListener.Server.Close();
+                        _tcpListener.Server.Dispose();
+                    }
+
+                    if (_tcpListener is not null)
+                    {
+                        _tcpListener.Stop();
+                    }
+                }
+                catch (Exception _)
+                {
+                    _output.WriteLog($"Some errors occured while disposing the server.");
+                }
+
+                _isListening = false;
+
+                _output.WriteLog("Server disposed.");
+            }
         }
 
         public Task StartAsync(CancellationToken cancellationToken)
@@ -166,12 +212,12 @@ namespace Noise.Core.Server
                 }
                 catch (ObjectDisposedException)
                 {
-                    if (peer != null) peer.Dispose();
+                    if (peer is not null) peer.Dispose();
                     continue;
                 }
                 catch (Exception ex)
                 {
-                    if (peer != null) peer.Dispose();
+                    if (peer is not null) peer.Dispose();
                     _output.WriteException("Exception while awaiting connections.", ex);
                     continue;
                 }
@@ -218,7 +264,7 @@ namespace Noise.Core.Server
                                 case PacketType.MESSAGE: OnMessageReceived?.Invoke(this, new MessageReceivedEventArgs(dataBuffer)); break;
                                 case PacketType.DISCOVERY: OnDiscoveryReceived?.Invoke(this, new DiscoveryReceivedEventArgs(dataBuffer)); break;
                                 case PacketType.SIGNATURE: OnSignatureReceived?.Invoke(this, new SignatureReceivedEventArgs(dataBuffer)); break;
-                                case PacketType.PING: OnPingReceived?.Invoke(this, new PingReceivedEventArgs()); break;
+                                case PacketType.PING: OnPingReceived?.Invoke(this, new PingReceivedEventArgs(ipPort)); break;
 
                                 default: throw new ArgumentException("Invalid packet type. No handler defined.");
                             }
@@ -277,17 +323,48 @@ namespace Noise.Core.Server
 
         private void UpdatePeerLastSeen(string ipPort)
         {
-            throw new NotImplementedException();
+            if (_peersLastSeen.ContainsKey(ipPort))
+            {
+                _peersLastSeen.TryRemove(ipPort, out _);
+            }
+
+            _peersLastSeen.TryAdd(ipPort, DateTime.Now);
         }
 
         private async Task<byte[]> DataReadAsync(PeerMetadata peer, CancellationToken token)
         {
-            throw new NotImplementedException();
+            var buffer = new byte[Constants.MaximalPacketSize];
+            int read = 0;
+
+            using var memoryStream = new MemoryStream();
+            while (true)
+            {
+                read = await peer.NetworkStream.ReadAsync(buffer, 0, buffer.Length, token).ConfigureAwait(false);
+
+                if (read > 0)
+                {
+                    await memoryStream.WriteAsync(buffer, 0, read, token).ConfigureAwait(false);
+                    return memoryStream.ToArray();
+                }
+                else
+                {
+                    _output.WriteLog("Read buffer not pupulated with network stream data.");
+                    throw new SocketException();
+                }
+            }
         }
 
         private bool IsPeerConnected(TcpClient tcpClient)
         {
-            throw new NotImplementedException();
+            if (!tcpClient.Connected) return false;
+
+            if (tcpClient.Client.Poll(0, SelectMode.SelectWrite) && (!tcpClient.Client.Poll(0, SelectMode.SelectError)))
+            {
+                var buffer = new byte[1];
+                if (tcpClient.Client.Receive(buffer, SocketFlags.Peek) == 0) return false;
+                return true;
+            }
+            return false;
         }
 
         private void ApplySocketSettings()
