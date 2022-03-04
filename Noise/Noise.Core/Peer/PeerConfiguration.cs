@@ -22,6 +22,7 @@ namespace Noise.Core.Peer
 
         public string PrivateKey { get; init; }
         public string PublicKey { get; init; }
+        public string ConfigurationSecret { get; init; }
         public bool VerboseMode { get; init; }
         public bool UseTracker { get; init; }
 
@@ -146,8 +147,11 @@ namespace Noise.Core.Peer
                 });
             }
 
-            public static PeerConfiguration Initialize()
+            public static PeerConfiguration Initialize(string configurationSecret)
             {
+                if (configurationSecret.IsEmpty())
+                    throw new ArgumentException("Invalid configuration secret.", nameof(configurationSecret));
+
                 var privateKey = AsymmetricEncryptionHandler.InitializePrivateKey();
                 var publicKey = AsymmetricEncryptionHandler.GetPublicKeyBase64(privateKey);
 
@@ -155,6 +159,7 @@ namespace Noise.Core.Peer
                 {
                     PrivateKey = privateKey,
                     PublicKey = publicKey,
+                    ConfigurationSecret = configurationSecret,
                     VerboseMode = false,
                     UseTracker = false
                 };

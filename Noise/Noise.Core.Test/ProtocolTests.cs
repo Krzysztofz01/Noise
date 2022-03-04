@@ -204,7 +204,7 @@ namespace Noise.Core.Test
         [Fact]
         public void PacketHandlingServiceShouldHandleSignaturePackets()
         {
-            var receiver = PeerConfiguration.Factory.Initialize();
+            var receiver = MockupPeerConfiguration();
 
             var phs = new PacketHandlingService();
 
@@ -222,10 +222,10 @@ namespace Noise.Core.Test
         [Fact]
         public void PacketHandlingServiceShouldHandleMessagePackets()
         {
-            var peer1 = PeerConfiguration.Factory.Initialize();
+            var peer1 = MockupPeerConfiguration();
             string peer1SignatureCreatedForPeer2;
 
-            var peer2 = PeerConfiguration.Factory.Initialize();
+            var peer2 = MockupPeerConfiguration();
             string peer2SignautreReceivedFromPeer1;
 
             var phs = new PacketHandlingService();
@@ -247,10 +247,10 @@ namespace Noise.Core.Test
         [Fact]
         public void PacketHandlingServiceShouldHandleDiscoveryPackets()
         {
-            var peer1 = PeerConfiguration.Factory.Initialize();
+            var peer1 = MockupPeerConfiguration();
             string peer1SignatureCreatedForPeer2;
 
-            var peer2 = PeerConfiguration.Factory.Initialize();
+            var peer2 = MockupPeerConfiguration();
             var endpoints = new List<string>() { "Hello World!" };
             var publicKeys = new List<string>() { "Hello World!" };
             string peer2SignautreReceivedFromPeer1;
@@ -310,6 +310,11 @@ namespace Noise.Core.Test
 
             Assert.Equal(pingPacket, builtPingPacket);
             Assert.Equal(discoveryPacket, builtDiscoveryPacket);
+        }
+
+        public PeerConfiguration MockupPeerConfiguration()
+        {
+            return PeerConfiguration.Factory.Initialize("Hello World!");
         }
     }
 }

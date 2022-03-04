@@ -175,9 +175,37 @@ namespace Noise.Core.Test
             Assert.Equal(secondKey, actualSecondKey);
         }
 
+        [Fact]
+        public void PeerConfigurationShouldEncryptAndDecryptWithCorrectSecret()
+        {
+            var secret = "Hello World!";
+            var peer = PeerConfiguration.Factory.Initialize(secret);
+
+            var encryptedPeerConfiguration = PeerEncryption.EncryptPeerConfiguration(peer);
+
+            var decryptedPeerConfiguration = PeerEncryption.DecryptPeerConfiguration(encryptedPeerConfiguration, secret);
+
+            Assert.NotNull(decryptedPeerConfiguration);
+            Assert.Equal(peer.PrivateKey, decryptedPeerConfiguration.PrivateKey);
+        }
+
+        [Fact]
+        public void PeerConfigurationShouldEncryptAndNotDecryptWithIncorrectSecret()
+        {
+            var secret = "Hello World!";
+            var peer = PeerConfiguration.Factory.Initialize(secret);
+
+            var encryptedPeerConfiguration = PeerEncryption.EncryptPeerConfiguration(peer);
+
+            var wrongSecret = "Hello World123!";
+            var decryptedPeerConfiguration = PeerEncryption.DecryptPeerConfiguration(encryptedPeerConfiguration, wrongSecret);
+
+            Assert.Null(decryptedPeerConfiguration);
+        }
+
         public PeerConfiguration MockUpPeerConfiguration()
         {
-            return PeerConfiguration.Factory.Initialize();
+            return PeerConfiguration.Factory.Initialize("Hello World!");
         }
 
         public string MockUpPeerSignature()
