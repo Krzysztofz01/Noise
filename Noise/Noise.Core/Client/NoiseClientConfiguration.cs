@@ -4,25 +4,55 @@ namespace Noise.Core.Client
 {
     public class NoiseClientConfiguration
     {
-        [Obsolete("Configuration validation not implemented.")]
-        public bool VerboseMode { get; set; }
+        private bool _verboseMode = false;
+        public bool VerboseMode
+        {
+            get => _verboseMode;
+            set => _verboseMode = value;
+        }
 
-        [Obsolete("Configuration validation not implemented.")]
-        public int StreamBufferSize { get; set; }
+        private int _streamBufferSize = 16384;
+        public int StreamBufferSize
+        {
+            get => _streamBufferSize;
+            set
+            {
+                if (value < 1 || value > 65536) throw new ArgumentException("Invalid StreamBufferSize.");
+                _streamBufferSize = value;
+            }
+        }
 
-        [Obsolete("Configuration validation not implemented.")]
-        public int ConnectTimeoutMs { get; set; }
+        private int _connectTimeoutMs = 5000;
+        public int ConnectTimeoutMs
+        {
+            get => _connectTimeoutMs;
+            set
+            {
+                if (value < 0 || value > int.MaxValue) throw new ArgumentException("Invalid ConnectTimeoutMs.");
+                _connectTimeoutMs = value;
+            }
+        }
 
-        [Obsolete("Configuration validation not implemented.")]
-        public int ReadTimeoutMs { get; set; }
+        private int _readTimeoutMs = 1000;
+        public int ReadTimeoutMs
+        {
+            get => _readTimeoutMs;
+            set
+            {
+                if (value < 0 || value > int.MaxValue) throw new ArgumentException("Invalid ReadTimeoutMs.");
+                _readTimeoutMs = value;
+            }
+        }
 
-        [Obsolete("Configuration validation not implemented.")]
-        public int IdleServerTimeoutMs { get; set; }
-
-        [Obsolete("Configuration validation not implemented.")]
-        public int IdleServerEvalIntervalMs { get; set; }
-
-        [Obsolete("Configuration validation not implemented.")]
-        public int MaxConnectRetryCount { get; set; }
+        private int _maxConnectRetryCount = 3;
+        public int MaxConnectRetryCount
+        {
+            get => _maxConnectRetryCount;
+            set
+            {
+                if (value < 0 || value > 15) throw new ArgumentException("Invalid MaxConnectRetryCount.");
+                _maxConnectRetryCount = value;
+            }
+        }
     }
 }
