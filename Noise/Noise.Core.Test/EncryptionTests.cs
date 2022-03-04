@@ -1,4 +1,5 @@
 ﻿using Noise.Core.Encryption;
+using Noise.Core.Extensions;
 using Xunit;
 
 namespace Noise.Core.Test
@@ -60,6 +61,19 @@ namespace Noise.Core.Test
         }
 
         [Fact]
+        public void SymmetricHandlerShouldBeCreatedAndEncryptDataWithExplicitKey()
+        {
+            string plainTextMessage = "Hello World!";
+            
+            string plainTextKey = "Hello World!";
+            string base64Key = plainTextKey.FromUtf8ToBase64();
+
+            var cipher = SymmetricEncryptionHandler.Encrypt(plainTextMessage, base64Key);
+
+            Assert.NotNull(cipher);
+        }
+
+        [Fact]
         public void SymmetricHandlerShouldEncryptAndDecryptUsingCorrectKey()
         {
             string plainTextMessage = "Hello World!";
@@ -72,11 +86,44 @@ namespace Noise.Core.Test
         }
 
         [Fact]
+        public void SymmetricHandlerShouldEncryptAndDecryptUsingCorrectExplicitKey()
+        {
+            string plainTextMessage = "Hello World!";
+
+            string plainTextKey = "Hello World!";
+            string base64Key = plainTextKey.FromUtf8ToBase64();
+
+            var cipher = SymmetricEncryptionHandler.Encrypt(plainTextMessage, base64Key);
+
+            var decryptedCipher = SymmetricEncryptionHandler.Decrypt(cipher, base64Key);
+
+            Assert.Equal(plainTextMessage, decryptedCipher);
+        }
+
+        [Fact]
         public void SymmetricHandlerShouldEncryptButNotDecryptUsingTheIncorrectKey()
         {
             string plainTextMessage = "Hello World!";
             
             var (cipher, _) = SymmetricEncryptionHandler.Encrypt(plainTextMessage);
+
+            var wrongKey = "This is not the correct key!";
+
+            var decryptedCipher = SymmetricEncryptionHandler.Decrypt(cipher, wrongKey);
+
+            Assert.NotEqual(plainTextMessage, decryptedCipher);
+            Assert.Null(decryptedCipher);
+        }
+
+        [Fact]
+        public void SymmetricHandlerShouldEncryptButNotDecryptUsingTheIncorrectExplicitKey()
+        {
+            string plainTextMessage = "Hello World!";
+
+            string plainTextKey = "Hello World!";
+            string base64Key = plainTextKey.FromUtf8ToBase64();
+
+            var cipher = SymmetricEncryptionHandler.Encrypt(plainTextMessage, base64Key);
 
             var wrongKey = "This is not the correct key!";
 

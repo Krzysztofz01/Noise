@@ -48,6 +48,38 @@ namespace Noise.Core.Encryption
 
             return (encodedCipher, encodedKey);
         }
+
+        public static string Encrypt(string plainData, string keyBase64)
+        {
+            using var aesGcm = CreateAesGcm(keyBase64);
+
+            byte[] dataBytes = Encoding.UTF8.GetBytes(plainData);
+
+            int nonceSize = AesGcm.NonceByteSizes.MaxSize;
+            int tagSize = AesGcm.TagByteSizes.MaxSize;
+            int cipherSize = dataBytes.Length;
+
+            int encryptedDataLength = 4 + nonceSize + 4 + tagSize + cipherSize;
+
+            Span<byte> encryptedData = encryptedDataLength < 1024
+                ? stackalloc byte[encryptedDataLength]
+                : new byte[encryptedDataLength].AsSpan();
+
+            BinaryPrimitives.WriteInt32LittleEndian(encryptedData.Slice(0, 4), nonceSize);
+            BinaryPrimitives.WriteInt32LittleEndian(encryptedData.Slice(4 + nonceSize, 4), tagSize);
+
+            var nonce = encryptedData.Slice(4, nonceSize);
+            var tag = encryptedData.Slice(4 + nonceSize + 4, tagSize);
+            var cipherBytes = encryptedData.Slice(4 + nonceSize + 4 + tagSize, cipherSize);
+
+            RandomNumberGenerator.Fill(nonce);
+
+            aesGcm.Encrypt(nonce, dataBytes.AsSpan(), cipherBytes, tag);
+
+            var encodedCipher = Convert.ToBase64String(encryptedData);
+
+            return encodedCipher;
+        }
         
         public static string Decrypt(string cipherBase64, string keyBase64)
         {
