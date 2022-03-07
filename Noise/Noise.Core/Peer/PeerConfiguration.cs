@@ -62,24 +62,27 @@ namespace Noise.Core.Peer
                 Endpoints.Add(ipv4Address);
         }
 
-        public void InsertPeer(string publicKey, string signature, string alias = _defaultAlias)
+        public void InsertPeer(string publicKey, string receivingSignature, string alias = _defaultAlias)
         {
             if (publicKey.IsEmpty())
                 throw new ArgumentNullException(nameof(publicKey), "Invalid public key for peer.");
 
-            if (signature.IsEmpty())
-                throw new ArgumentNullException(nameof(signature), "Invalid signature for peer.");
+            if (receivingSignature.IsEmpty())
+                throw new ArgumentNullException(nameof(receivingSignature), "Invalid signature for peer.");
 
             if (alias.IsEmpty())
                 throw new ArgumentNullException(nameof(alias), "Invalid alias value for peer.");
 
             if (Peers.Any(p => p.PublicKey == publicKey))
-                throw new ArgumentNullException(nameof(publicKey), "Given public key is already exists.");
+                throw new InvalidOperationException("Given public key already exists.");
+
+            if (Peers.Any(p => p.ReceivingSignature == receivingSignature))
+                throw new InvalidOperationException("Given signature already exists");
 
             if (Peers.Any(p => p.Alias == alias && alias != _defaultAlias))
-                throw new ArgumentNullException(nameof(alias), "Given alias is alredy is usage.");
+                throw new InvalidOperationException("Given alias is alredy is usage.");
 
-            Peers.Add(RemotePeer.Factory.FromParameters(publicKey, GenerateOrdinalNumberIdentifier(), signature, alias));
+            Peers.Add(RemotePeer.Factory.FromParameters(publicKey, GenerateOrdinalNumberIdentifier(), receivingSignature, alias));
         }
 
         public void InsertAlias(string publicKey, string alias)
@@ -114,6 +117,11 @@ namespace Noise.Core.Peer
             return Peers.Single(p => p.Identifier == id);
         }
 
+        public RemotePeer GetPeerByReceivingSignature(string receivingSignature)
+        {
+            return Peers.Single(p => p.ReceivingSignature == receivingSignature);
+        }
+
         public bool IsEndpointKnown(string endpoint)
         {
             string ipv4Address = endpoint.Split(':').First();
@@ -123,6 +131,11 @@ namespace Noise.Core.Peer
         public bool IsPeerKnown(string publicKey)
         {
             return Peers.Any(p => p.PublicKey == publicKey);
+        }
+
+        public bool IsReceivingSignatureValid(string receivingSignature)
+        {
+            return Peers.Any(p => p.ReceivingSignature == receivingSignature);
         }
 
         public string Serialize()

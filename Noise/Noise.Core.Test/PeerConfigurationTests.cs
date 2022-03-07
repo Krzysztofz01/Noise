@@ -91,7 +91,7 @@ namespace Noise.Core.Test
         }
 
         [Fact]
-        public void PeerShouldAddAliasToKeyWhenKeyExists()
+        public void PeerShouldAddAliasToPeerWhenKeyExists()
         {
             var pc = MockUpPeerConfiguration();
 
@@ -111,6 +111,24 @@ namespace Noise.Core.Test
 
             Assert.Equal(key, pc.GetPeerByAlias(alias).PublicKey);
             Assert.Equal(alias, pc.GetPeerByPublicKey(key).Alias);
+        }
+
+        [Fact]
+        public void PeerShouldAddSendingSignatureToPeer()
+        {
+            var pc = MockUpPeerConfiguration();
+
+            var key = MockUpPeerConfiguration().PublicKey;
+            var signature = MockUpPeerSignature();
+
+            pc.InsertPeer(key, signature);
+
+            var sendingSignature = MockUpPeerSignature();
+            pc.GetPeerByPublicKey(key).SetSendingSignature(sendingSignature);
+
+            var actualSendingSignature = pc.GetPeerByPublicKey(key).SendingSignature;
+
+            Assert.Equal(sendingSignature, actualSendingSignature);
         }
 
         [Fact]
@@ -173,6 +191,38 @@ namespace Noise.Core.Test
 
             Assert.Equal(firstKey, actualFirstKey);
             Assert.Equal(secondKey, actualSecondKey);
+        }
+
+        [Fact]
+        public void PeerShouldGetKnownPeerBySignature()
+        {
+            var pc = MockUpPeerConfiguration();
+
+            var knownKey = MockUpPeerConfiguration().PublicKey;
+            var knownSignature = MockUpPeerSignature();
+            pc.InsertPeer(knownKey, knownSignature);
+
+            var actualSignature = pc.GetPeerByReceivingSignature(knownSignature).ReceivingSignature;
+
+            Assert.Equal(knownSignature, actualSignature);
+        }
+
+        [Fact]
+        public void PeerShouldTellIfGivenSignatureIsValid()
+        {
+            var pc = MockUpPeerConfiguration();
+
+            var firstKey = MockUpPeerConfiguration().PublicKey;
+            var firstSignature = MockUpPeerSignature();
+            pc.InsertPeer(firstKey, firstSignature);
+
+            var secondSignature = MockUpPeerSignature();
+
+            var isFirstKeyValid = pc.IsReceivingSignatureValid(firstSignature);
+            var isSecondKeyValid = pc.IsReceivingSignatureValid(secondSignature);
+
+            Assert.True(isFirstKeyValid);
+            Assert.False(isSecondKeyValid);
         }
 
         [Fact]
