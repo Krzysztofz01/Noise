@@ -1,4 +1,5 @@
 ﻿using Noise.Core.Abstraction;
+using Noise.Core.Exceptions;
 using Noise.Core.Extensions;
 using Noise.Core.Peer;
 using Noise.Core.Protocol;
@@ -15,7 +16,7 @@ namespace Noise.Core.Server
 {
     public class NoiseServer : INoiseServer
     {
-        private readonly IOutput _output;
+        private readonly IOutputMonitor<NoiseServer> _outputMonitor;
         private readonly PeerConfiguration _peerConfiguration;
         private readonly NoiseServerConfiguration _noiseServerConfiguration;
 
@@ -37,10 +38,10 @@ namespace Noise.Core.Server
         private CancellationToken _token;
 
         private NoiseServer() { }
-        public NoiseServer(IOutput output, PeerConfiguration peerConfiguration, NoiseServerConfiguration noiseServerConfiguration)
+        public NoiseServer(IOutputMonitor<NoiseServer> outputMonitor, PeerConfiguration peerConfiguration, NoiseServerConfiguration noiseServerConfiguration)
         {
-            _output = output ??
-                throw new ArgumentNullException(nameof(output));
+            _outputMonitor = outputMonitor ??
+                throw new ArgumentNullException(nameof(outputMonitor));
 
             _peerConfiguration = peerConfiguration ??
                 throw new ArgumentNullException(nameof(peerConfiguration));
@@ -62,7 +63,8 @@ namespace Noise.Core.Server
 
         private void PeerConnectedEventHandler(object sender, PeerConnectedEventArgs e)
         {
-            throw new NotImplementedException();
+            var senderEndpoint = e.PeerEndpoint;
+            LogVerbose($"Peer with endpoint: {senderEndpoint} disconnected.");
         }
 
         private void SignatureReceivedEventHandler(object sender, SignatureReceivedEventArgs e)
@@ -72,17 +74,58 @@ namespace Noise.Core.Server
 
         private void PingReceivedEventHandler(object sender, PingReceivedEventArgs e)
         {
-            _output.WritePing(e.PeerEndpoint);
+            var senderEndpoint = e.PeerEndpoint;
+            LogVerbose($"Server received ping packets from peer: {senderEndpoint}");
+
+            _outputMonitor.WritePing(senderEndpoint);
         }
 
         private void PeerDisconnectedEventHandler(object sender, PeerDisconnectedEventArgs e)
         {
-            throw new NotImplementedException();
+            var senderEndpoint = e.PeerEndpoint;
+            LogVerbose($"Peer with endpoint: {senderEndpoint} disconnected.");
         }
 
         private void MessageReceivedEventHandler(object sender, MessageReceivedEventArgs e)
         {
-            throw new NotImplementedException();
+            try
+            {
+                var senderEndpoint = e.PeerEndpoint;
+                LogVerbose($"Server received message packets from peer: {senderEndpoint}");
+
+                var bufferQueue = PacketBufferQueueBuilder
+                    .Create()
+                    .InsertBuffer(e.PacketBufferQueue)
+                    .Build();
+
+                var keyBuffer = bufferQueue.Dequeue();
+                var messageBuffer = bufferQueue.Dequeue();
+
+                var packetHandlingService = new PacketHandlingService();
+                var (senderIdentityProve, message) = packetHandlingService.ReceiveMessage(keyBuffer, messageBuffer, _peerConfiguration.PrivateKey);
+
+                if (!_peerConfiguration.IsReceivingSignatureValid(senderIdentityProve))
+                {
+                    LogVerbose($"Unknown peer with no signature valid or assigned signature tried to send message packets from: {senderEndpoint}");
+                    return;
+                }
+
+                var senderPeer = _peerConfiguration.GetPeerByReceivingSignature(senderIdentityProve);
+
+                _outputMonitor.WriteMessage(
+                    senderPeer.PublicKey,
+                    senderPeer.Alias,
+                    senderEndpoint,
+                    message);
+            }
+            catch (PacketRejectedException)
+            {
+                LogVerbose("The destination of the received packet was not matching to given key pair.");
+            }
+            catch (Exception ex)
+            {
+                LogVerbose($"Unexpected exception while receiving message packets. {ex.Message}");
+            }
         }
 
         private void DiscoveryReceivedEventHandler(object sender, DiscoveryReceivedEventArgs e)
@@ -100,6 +143,8 @@ namespace Noise.Core.Server
         {
             if (disposing)
             {
+                LogVerbose("Disposing the noise server.");
+
                 try
                 {
                     if (_peers is not null && !_peers.IsEmpty)
@@ -107,7 +152,7 @@ namespace Noise.Core.Server
                         foreach (var peer in _peers)
                         {
                             peer.Value.Dispose();
-                            _output.WriteLog($"Disposing the connection with: {peer.Key}");
+                            LogVerbose($"Disposing connection with: {peer.Key}");
                         }
                     }
 
@@ -130,20 +175,20 @@ namespace Noise.Core.Server
                         _tcpListener.Stop();
                     }
                 }
-                catch (Exception _)
+                catch (Exception ex)
                 {
-                    _output.WriteLog($"Some errors occured while disposing the server.");
+                    _outputMonitor.LogError($"Some errors occured while disposing the server.", ex);
                 }
 
                 _isListening = false;
 
-                _output.WriteLog("Server disposed.");
+                LogVerbose("Noise server disposed.");
             }
         }
 
         public Task StartAsync(CancellationToken cancellationToken)
         {
-            _output.WriteLog("Starting up the server...");
+            LogVerbose("Starting up the noise server.");
             if (_isListening) throw new InvalidOperationException("The server is already running.");
 
             _tcpListener = new TcpListener(IPAddress.Any, Constants.ProtocolPort);
@@ -156,20 +201,20 @@ namespace Noise.Core.Server
             _tokenSource = new CancellationTokenSource();
             _token = _tokenSource.Token;
 
-            _output.WriteLog("Server started. Waiting for incoming connections.");
+            LogVerbose("Noise server started. Waiting for incoming connections.");
             return Task.Run(() => AcceptConnections(), _token);
         }
 
         public void Stop()
         {
-            _output.WriteLog("Shuting down the sever...");
+            LogVerbose("Shuting down the noise sever.");
             if (!_isListening) throw new InvalidOperationException("The server is not running.");
 
             _isListening = false;
             _tcpListener.Stop();
             _tokenSource.Cancel();
 
-            _output.WriteLog("Server stopped successful.");
+            LogVerbose("Noise server stopped successful.");
         }
 
         private async Task AcceptConnections()
@@ -200,25 +245,32 @@ namespace Noise.Core.Server
                 }
                 catch (TaskCanceledException)
                 {
+                    LogVerbose("Connection accept task canceled.");
+
                     _isListening = false;
                     if (peer is not null) peer.Dispose();
                     return;
                 }
                 catch (OperationCanceledException)
                 {
+                    LogVerbose("Connection accept operation canceled.");
+
                     _isListening = false;
                     if (peer is not null) peer.Dispose();
                     return;
                 }
                 catch (ObjectDisposedException)
                 {
+                    LogVerbose("Server object disposed on accepting connection.");
+
                     if (peer is not null) peer.Dispose();
                     continue;
                 }
                 catch (Exception ex)
                 {
+                    LogVerbose($"Unexpected exception while awaiting connections. {ex.Message}");
+
                     if (peer is not null) peer.Dispose();
-                    _output.WriteException("Exception while awaiting connections.", ex);
                     continue;
                 }
             }
@@ -229,7 +281,7 @@ namespace Noise.Core.Server
         private async Task DataReceiver(PeerMetadata peer)
         {
             string ipPort = peer.IpPort;
-            _output.WriteLog($"Data reciver started for peer: ${ipPort}");
+            LogVerbose($"Receiving data from: ${ipPort}");
 
             CancellationTokenSource linkedCts = CancellationTokenSource.CreateLinkedTokenSource(_token, peer.Token);
 
@@ -239,13 +291,13 @@ namespace Noise.Core.Server
                 {
                     if (!IsPeerConnected(peer.TcpClient))
                     {
-                        _output.WriteLog($"Peer: {ipPort} disconnected.");
+                        LogVerbose($"Peer from endpoint: {ipPort} disconnected.");
                         break;
                     }
 
                     if (peer.Token.IsCancellationRequested)
                     {
-                        _output.WriteLog($"Peer: {ipPort} requested the connection cancellation.");
+                        LogVerbose($"Connection for peer from: {ipPort} canceled.");
                         break;
                     }
 
@@ -261,9 +313,9 @@ namespace Noise.Core.Server
                         {
                             switch (PeekPacketType(dataBuffer))
                             {
-                                case PacketType.MESSAGE: OnMessageReceived?.Invoke(this, new MessageReceivedEventArgs(dataBuffer)); break;
-                                case PacketType.DISCOVERY: OnDiscoveryReceived?.Invoke(this, new DiscoveryReceivedEventArgs(dataBuffer)); break;
-                                case PacketType.SIGNATURE: OnSignatureReceived?.Invoke(this, new SignatureReceivedEventArgs(dataBuffer)); break;
+                                case PacketType.MESSAGE: OnMessageReceived?.Invoke(this, new MessageReceivedEventArgs(dataBuffer, ipPort)); break;
+                                case PacketType.DISCOVERY: OnDiscoveryReceived?.Invoke(this, new DiscoveryReceivedEventArgs(dataBuffer, ipPort)); break;
+                                case PacketType.SIGNATURE: OnSignatureReceived?.Invoke(this, new SignatureReceivedEventArgs(dataBuffer, ipPort)); break;
                                 case PacketType.PING: OnPingReceived?.Invoke(this, new PingReceivedEventArgs(ipPort)); break;
 
                                 default: throw new ArgumentException("Invalid packet type. No handler defined.");
@@ -274,28 +326,28 @@ namespace Noise.Core.Server
                 }
                 catch (IOException)
                 {
-                    _output.WriteLog($"Data receive for peer: {ipPort} canceled. Peer disconnected.");
+                    LogVerbose($"Data receive for peer: {ipPort} canceled. Peer disconnected.");
                 }
                 catch (SocketException)
                 {
-                    _output.WriteLog($"Data receive for peer: {ipPort} canceled. Peer disconnected.");
+                    LogVerbose($"Data receive for peer: {ipPort} canceled. Peer disconnected.");
                 }
                 catch (TaskCanceledException)
                 {
-                    _output.WriteLog($"Data receive for peer: {ipPort} canceled. Task canceled.");
+                    LogVerbose($"Data receive for peer: {ipPort} canceled. Task canceled.");
                 }
                 catch (ObjectDisposedException)
                 {
-                    _output.WriteLog($"Data receive for peer: {ipPort} canceled. Task disposed.");
+                    LogVerbose($"Data receive for peer: {ipPort} canceled. Task disposed.");
                 }
                 catch (Exception ex)
                 {
-                    _output.WriteException("Data receive failure.", ex);
+                    LogVerbose($"Unexpected peer data receive failure. {ex.Message}");
                     break;
                 }
             }
 
-            _output.WriteLog($"Data receive terminated for peer: {ipPort}");
+            LogVerbose($"Data receive terminated for peer: {ipPort}");
 
             if (_peersTimedout.ContainsKey(peer.IpPort))
             {
@@ -348,7 +400,7 @@ namespace Noise.Core.Server
                 }
                 else
                 {
-                    _output.WriteLog("Read buffer not pupulated with network stream data.");
+                    LogVerbose("Read buffer not pupulated with network stream data.");
                     throw new SocketException();
                 }
             }
@@ -377,11 +429,11 @@ namespace Noise.Core.Server
                     _tcpListener.Server.SetSocketOption(SocketOptionLevel.Tcp, SocketOptionName.TcpKeepAliveTime, _noiseServerConfiguration.KeepAliveTime);
                     _tcpListener.Server.SetSocketOption(SocketOptionLevel.Tcp, SocketOptionName.TcpKeepAliveInterval, _noiseServerConfiguration.KeepAliveInterval);
                     _tcpListener.Server.SetSocketOption(SocketOptionLevel.Tcp, SocketOptionName.TcpKeepAliveRetryCount, _noiseServerConfiguration.KeepAliveRetryCount);
-                }  
+                }
             }
             catch (Exception ex)
             {
-                _output.WriteException("Invalid server configuration.", ex);
+                _outputMonitor.LogError("Invalid server configuration.", ex);
                 throw;
             }
         }
@@ -400,7 +452,7 @@ namespace Noise.Core.Server
             }
             catch (Exception ex)
             {
-                _output.WriteException("Invalid server configuration.", ex);
+                _outputMonitor.LogError("Invalid server configuration.", ex);
                 throw;
             }
         }
@@ -411,6 +463,12 @@ namespace Noise.Core.Server
                 throw new ArgumentException("Invalid buffer size, the packet may be corrupted.");
 
             return (PacketType)packetBuffer.ToInt32(4);
+        }
+
+        private void LogVerbose(string message)
+        {
+            if (_noiseServerConfiguration.VerboseMode)
+                _outputMonitor.LogInformation(message);
         }
     }
 }

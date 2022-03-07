@@ -2,7 +2,7 @@
 {
     public class SignatureReceivedEventArgs : BufferQueueEventArgs
     {
-        public SignatureReceivedEventArgs(byte[] packetBufferQueue) : base(packetBufferQueue)
+        public SignatureReceivedEventArgs(byte[] packetBufferQueue, string peerEndpoint) : base(packetBufferQueue, peerEndpoint)
         {
         }
     }

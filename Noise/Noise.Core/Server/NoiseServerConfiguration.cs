@@ -11,6 +11,14 @@ namespace Noise.Core.Server
             set => _verboseMode = value;
         }
 
+        private bool _skipSignatureCheck = false;
+        [Obsolete("This will cause issues. Development purposes only.")]
+        public bool SkipSignatureCheck
+        {
+            get => _skipSignatureCheck;
+            set => _skipSignatureCheck = value;
+        }
+
         private int _streamBufferSize = 16384;
         public int StreamBufferSize
         {

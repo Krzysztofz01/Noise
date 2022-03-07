@@ -2,7 +2,7 @@
 {
     public class MessageReceivedEventArgs : BufferQueueEventArgs
     {
-        public MessageReceivedEventArgs(byte[] packetBufferQueue) : base(packetBufferQueue)
+        public MessageReceivedEventArgs(byte[] packetBufferQueue, string peerEndpoint) : base(packetBufferQueue, peerEndpoint)
         {
         }
     }
