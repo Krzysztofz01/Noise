@@ -62,8 +62,35 @@ namespace Noise.Core.Test
 
             var payloadDeserialized = packetDeserialized.PeekPayload;
 
+            string expectedImc = string.Empty;
+
             Assert.Equal(payload.Serialize(), payloadDeserialized.Serialize());
             Assert.Equal(signature, payloadDeserialized.Signature);
+            Assert.Equal(expectedImc, payloadDeserialized.Certification);
+        }
+
+        [Fact]
+        public void PacketWithSignaturePayloadShouldCreateSerializeAndDeserializeWithCertification()
+        {
+            string signature = Guid.NewGuid().ToString();
+            string imc = Guid.NewGuid().ToString();
+
+            var payload = SignaturePayload.Factory.Create(signature, imc);
+            var packet = Packet<SignaturePayload>.Factory.FromPayload(payload);
+
+            Assert.NotNull(packet);
+
+            var packetBuffer = packet.GetBytes();
+            var packetDeserialized = Packet.Factory.FromBuffer<SignaturePayload>(packetBuffer);
+
+            Assert.NotNull(packetDeserialized);
+            Assert.Equal(packet, packetDeserialized);
+
+            var payloadDeserialized = packetDeserialized.PeekPayload;
+
+            Assert.Equal(payload.Serialize(), payloadDeserialized.Serialize());
+            Assert.Equal(signature, payloadDeserialized.Signature);
+            Assert.Equal(imc, payloadDeserialized.Certification);
         }
 
         [Fact]

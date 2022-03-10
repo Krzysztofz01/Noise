@@ -1,13 +1,12 @@
 ﻿using Noise.Core.Extensions;
 using System;
-using System.Collections.Generic;
-using System.Text.Json;
 
 namespace Noise.Core.Protocol
 {
     public class SignaturePayload : Payload<SignaturePayload>
     {
         private const string _propSignature = "s";
+        private const string _propIndependentMediumCertificationSecret = "c";
 
         [Obsolete("Use the KeyPayload.Factory.Create method create a new payload instance.")]
         public SignaturePayload() : base() { }
@@ -15,6 +14,7 @@ namespace Noise.Core.Protocol
         public override PacketType Type => PacketType.SIGNATURE;
 
         public string Signature => Properties[_propSignature];
+        public string Certification => Properties[_propIndependentMediumCertificationSecret];
 
         public override void Validate()
         {
@@ -28,10 +28,11 @@ namespace Noise.Core.Protocol
         #pragma warning disable CS0618
         public static class Factory
         {
-            public static SignaturePayload Create(string signature)
+            public static SignaturePayload Create(string signature, string certification = null)
             {
                 var payload = new SignaturePayload();
                 payload.InsertProperty(_propSignature, signature);
+                payload.InsertProperty(_propIndependentMediumCertificationSecret, certification ?? string.Empty);
 
                 payload.Validate();
                 return payload;

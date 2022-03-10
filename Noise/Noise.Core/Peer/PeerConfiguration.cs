@@ -25,6 +25,8 @@ namespace Noise.Core.Peer
         public string ConfigurationSecret { get; init; }
         public bool VerboseMode { get; init; }
         public bool UseTracker { get; init; }
+        public IEnumerable<string> Trackers { get; init; }
+        public string IndependentMediumCertification { get; init; }
 
         [JsonConstructor]
         [Obsolete("This constructor is only for deserialization and ,,private'' usage. Use one of the methods of the PeerConfiguration.Factory class.")]
@@ -32,6 +34,7 @@ namespace Noise.Core.Peer
         {
             Endpoints = new List<string>();
             Peers = new List<RemotePeer>();
+            Trackers = new List<string>();
         }
 
         private int GenerateOrdinalNumberIdentifier()
@@ -174,7 +177,9 @@ namespace Noise.Core.Peer
                     PublicKey = publicKey,
                     ConfigurationSecret = configurationSecret,
                     VerboseMode = false,
-                    UseTracker = false
+                    UseTracker = false,
+                    Trackers = new List<string>(),
+                    IndependentMediumCertification = null
                 };
             }
         }
