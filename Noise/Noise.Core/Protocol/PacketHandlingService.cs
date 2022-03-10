@@ -57,16 +57,25 @@ namespace Noise.Core.Protocol
             return pingPacket;
         }
 
-        public (IPacket signaturePacket, string receiverIdentityProve) CreateSignaturePacket(string receiverPublicKey)
+        public (IPacket keyPacket, IPacket signaturePacket, string receiverIdentityProve) CreateSignaturePacket(string receiverPublicKey, string senderPublicKey, string certification = null)
         {
             var signature = SignatureBuilder.GenerateSignature();
 
-            var signatureCipher = AsymmetricEncryptionHandler.Encrypt(signature, receiverPublicKey);
+            var (signatureCipher, signatureKey) = SymmetricEncryptionHandler.Encrypt(signature);
+            var (senderPublicKeyCipher, senderPublicKeyKey) = SymmetricEncryptionHandler.Encrypt(senderPublicKey);
+            var (certificationCipher, certificationKey) = SymmetricEncryptionHandler.Encrypt(certification ?? string.Empty);
 
-            var signaturePayload = SignaturePayload.Factory.Create(signatureCipher);
+            var signatureKeys = $"{signatureKey},{senderPublicKeyKey},{certificationKey}";
+
+            var signaturePayload = SignaturePayload.Factory.Create(signatureCipher, senderPublicKeyCipher, certificationCipher);
             var signaturePacket = Packet<SignaturePayload>.Factory.FromPayload(signaturePayload);
 
-            return (signaturePacket, signature);
+            var signatureKeyCipher = AsymmetricEncryptionHandler.Encrypt(signatureKeys, receiverPublicKey);
+
+            var keyPayload = KeyPayload.Factory.Create(signatureKeyCipher, string.Empty);
+            var keyPacket = Packet<KeyPayload>.Factory.FromPayload(keyPayload);
+
+            return (keyPacket, signaturePacket, signature);
         }
 
         public (IEnumerable<string> endpoints, IEnumerable<string> publicKeys, string senderIdentityProve) ReceiveDiscoveryCollections(byte[] keyPacketBuffer, byte[] discoveryPacketBuffer, string receiverPrivateKey)
@@ -90,11 +99,22 @@ namespace Noise.Core.Protocol
             return (deserializedEndpoints, deserializedPublicKeys, signature);
         }
 
-        public string ReceiveIdentityProve(byte[] signaturePacketBuffer, string receiverPrivateKey)
+        public (string signature, string senderPublicKey, string certification) ReceiveIdentityProve(byte[] keyPacketBuffer, byte[] signaturePacketBuffer, string receiverPrivateKey)
         {
+            var keyPayload = Packet.Factory.FromBuffer<KeyPayload>(keyPacketBuffer).PeekPayload;
             var signaturePayload = Packet.Factory.FromBuffer<SignaturePayload>(signaturePacketBuffer).PeekPayload;
 
-            return AsymmetricEncryptionHandler.Decrypt(signaturePayload.Signature, receiverPrivateKey) ?? throw new PacketRejectedException();
+            var signatureKeys = AsymmetricEncryptionHandler.Decrypt(keyPayload.MessageKey, receiverPrivateKey) ?? throw new PacketRejectedException();
+
+            var signatureKey = signatureKeys.Split(',').First();
+            var senderPublicKeyKey = signatureKeys.Split(',').Skip(1).First();
+            var certificationKey = signatureKeys.Split(',').Last();
+
+            var signature = SymmetricEncryptionHandler.Decrypt(signaturePayload.Signature, signatureKey) ?? throw new PacketRejectedException();
+            var senderPublicKey = SymmetricEncryptionHandler.Decrypt(signaturePayload.SenderPublicKey, senderPublicKeyKey) ?? throw new PacketRejectedException();
+            var certification = SymmetricEncryptionHandler.Decrypt(signaturePayload.Certification, certificationKey) ?? throw new PacketRejectedException();
+
+            return (signature, senderPublicKey, certification);
         }
 
         public (string senderIdentityProve, string message) ReceiveMessage(byte[] keyPacketBuffer, byte[] messagePacketBuffer, string receiverPrivateKey)

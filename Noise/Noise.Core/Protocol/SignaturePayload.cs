@@ -6,6 +6,7 @@ namespace Noise.Core.Protocol
     public class SignaturePayload : Payload<SignaturePayload>
     {
         private const string _propSignature = "s";
+        private const string _propSenderPublicKey = "p";
         private const string _propIndependentMediumCertificationSecret = "c";
 
         [Obsolete("Use the KeyPayload.Factory.Create method create a new payload instance.")]
@@ -14,6 +15,7 @@ namespace Noise.Core.Protocol
         public override PacketType Type => PacketType.SIGNATURE;
 
         public string Signature => Properties[_propSignature];
+        public string SenderPublicKey => Properties[_propSenderPublicKey];
         public string Certification => Properties[_propIndependentMediumCertificationSecret];
 
         public override void Validate()
@@ -23,15 +25,25 @@ namespace Noise.Core.Protocol
 
             if (Properties[_propSignature].IsEmpty())
                 throw new InvalidOperationException("The required payload property has a invalid value.");
+
+            if (!Properties.ContainsKey(_propSenderPublicKey))
+                throw new InvalidOperationException("The payload does not include required property.");
+
+            if (Properties[_propSenderPublicKey].IsEmpty())
+                throw new InvalidOperationException("The required payload property has a invalid value.");
+
+            if (!Properties.ContainsKey(_propIndependentMediumCertificationSecret))
+                throw new InvalidOperationException("The payload does not include required property.");
         }
 
         #pragma warning disable CS0618
         public static class Factory
         {
-            public static SignaturePayload Create(string signature, string certification = null)
+            public static SignaturePayload Create(string signature, string senderPublicKey, string certification = null)
             {
                 var payload = new SignaturePayload();
                 payload.InsertProperty(_propSignature, signature);
+                payload.InsertProperty(_propSenderPublicKey, senderPublicKey);
                 payload.InsertProperty(_propIndependentMediumCertificationSecret, certification ?? string.Empty);
 
                 payload.Validate();

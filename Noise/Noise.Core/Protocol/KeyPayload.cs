@@ -27,8 +27,9 @@ namespace Noise.Core.Protocol
             if (Properties[_propMessageKey].IsEmpty())
                 throw new InvalidOperationException("The required payload property has a invalid value.");
 
-            if (Properties[_propIdentityProveKey].IsEmpty())
-                throw new InvalidOperationException("The required payload property has a invalid value.");
+            // Disabled in order to use with signature propagation packet type
+            // if (Properties[_propIdentityProveKey].IsEmpty())
+            //     throw new InvalidOperationException("The required payload property has a invalid value.");
         }
 
         #pragma warning disable CS0618
