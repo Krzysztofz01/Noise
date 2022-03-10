@@ -32,6 +32,7 @@ namespace Noise.Core.Peer
                     PublicKey = publicKey,
                     Identifier = identifier,
                     ReceivingSignature = receivingSignature,
+                    SendingSignature = null,
                     Alias = alias ?? _defaultAlias
                 };
                 #pragma warning restore CS0618 // Type or member is obsolete

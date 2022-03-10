@@ -65,13 +65,10 @@ namespace Noise.Core.Peer
                 Endpoints.Add(ipv4Address);
         }
 
-        public void InsertPeer(string publicKey, string receivingSignature, string alias = _defaultAlias)
+        public void InsertPeer(string publicKey, string receivingSignature = null, string alias = _defaultAlias)
         {
             if (publicKey.IsEmpty())
                 throw new ArgumentNullException(nameof(publicKey), "Invalid public key for peer.");
-
-            if (receivingSignature.IsEmpty())
-                throw new ArgumentNullException(nameof(receivingSignature), "Invalid signature for peer.");
 
             if (alias.IsEmpty())
                 throw new ArgumentNullException(nameof(alias), "Invalid alias value for peer.");
@@ -79,7 +76,7 @@ namespace Noise.Core.Peer
             if (Peers.Any(p => p.PublicKey == publicKey))
                 throw new InvalidOperationException("Given public key already exists.");
 
-            if (Peers.Any(p => p.ReceivingSignature == receivingSignature))
+            if (receivingSignature is not null && Peers.Any(p => p.ReceivingSignature == receivingSignature))
                 throw new InvalidOperationException("Given signature already exists");
 
             if (Peers.Any(p => p.Alias == alias && alias != _defaultAlias))
@@ -134,6 +131,11 @@ namespace Noise.Core.Peer
         public bool IsPeerKnown(string publicKey)
         {
             return Peers.Any(p => p.PublicKey == publicKey);
+        }
+
+        public bool HasPeerAssignedSignature(string publicKey)
+        {
+            return Peers.Any(p => p.PublicKey == publicKey && p.ReceivingSignature is not null);
         }
 
         public bool IsReceivingSignatureValid(string receivingSignature)

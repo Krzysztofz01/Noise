@@ -27,9 +27,9 @@ namespace Noise.Core.Server
         public event EventHandler<PingReceivedEventArgs> OnPingReceived;
         public event EventHandler<SignatureReceivedEventArgs> OnSignatureReceived;
 
-        private ConcurrentDictionary<string, PeerMetadata> _peers;
-        private ConcurrentDictionary<string, DateTime> _peersLastSeen;
-        private ConcurrentDictionary<string, DateTime> _peersTimedout;
+        private readonly ConcurrentDictionary<string, PeerMetadata> _peers;
+        private readonly ConcurrentDictionary<string, DateTime> _peersLastSeen;
+        private readonly ConcurrentDictionary<string, DateTime> _peersTimedout;
 
         private TcpListener _tcpListener;
         private bool _isListening;
@@ -69,7 +69,48 @@ namespace Noise.Core.Server
 
         private void SignatureReceivedEventHandler(object sender, SignatureReceivedEventArgs e)
         {
-            throw new NotImplementedException();
+            try
+            {
+                var senderEndpoint = e.PeerEndpoint;
+                LogVerbose($"Server received message packets from peer: {senderEndpoint}");
+
+                var bufferQueue = PacketBufferQueueBuilder
+                    .Create()
+                    .InsertBuffer(e.PacketBufferQueue)
+                    .Build();
+
+                var keyBuffer = bufferQueue.Dequeue();
+                var signatureBuffer = bufferQueue.Dequeue();
+
+                var packetHandlingService = new PacketHandlingService();
+                var (signature, senderPublicKey, certification) = packetHandlingService.ReceiveIdentityProve(keyBuffer, signatureBuffer, _peerConfiguration.PrivateKey);
+
+                if (_peerConfiguration.IndependentMediumCertification is not null)
+                {
+                    if (_peerConfiguration.IndependentMediumCertification != certification)
+                    {
+                        LogVerbose("Invalid independent medium certification configuration.");
+                        return;
+                    }
+                }
+
+                if (_peerConfiguration.HasPeerAssignedSignature(senderPublicKey))
+                {
+                    LogVerbose("Given peer has already asigned a signature. Someone might try to spoof another peer.");
+                    return;
+                }
+
+                LogVerbose($"Signature received successful.");
+                _peerConfiguration.InsertPeer(senderPublicKey, signature);
+            }
+            catch (PacketRejectedException)
+            {
+                LogVerbose("The destination of the received packet was not matching to given key pair.");
+            }
+            catch (Exception ex)
+            {
+                LogVerbose($"Unexpected exception while receiving message packets. {ex.Message}");
+            }
         }
 
         private void PingReceivedEventHandler(object sender, PingReceivedEventArgs e)
@@ -112,6 +153,7 @@ namespace Noise.Core.Server
 
                 var senderPeer = _peerConfiguration.GetPeerByReceivingSignature(senderIdentityProve);
 
+                LogVerbose($"Message received successful.");
                 _outputMonitor.WriteMessage(
                     senderPeer.PublicKey,
                     senderPeer.Alias,

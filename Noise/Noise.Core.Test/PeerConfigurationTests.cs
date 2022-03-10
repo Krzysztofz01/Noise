@@ -226,6 +226,22 @@ namespace Noise.Core.Test
         }
 
         [Fact]
+        public void PeerShouldTellIfASignatureIsAssignedToRemotePeer()
+        {
+            var pc = MockUpPeerConfiguration();
+
+            var firstKey = MockUpPeerConfiguration().PublicKey;
+            var firstSignature = MockUpPeerSignature();
+            pc.InsertPeer(firstKey, firstSignature);
+
+            var secondKey = MockUpPeerConfiguration().PublicKey;
+            pc.InsertPeer(secondKey);
+
+            Assert.True(pc.HasPeerAssignedSignature(firstKey));
+            Assert.False(pc.HasPeerAssignedSignature(secondKey));
+        }
+
+        [Fact]
         public void PeerConfigurationShouldEncryptAndDecryptWithCorrectSecret()
         {
             var secret = "Hello World!";
