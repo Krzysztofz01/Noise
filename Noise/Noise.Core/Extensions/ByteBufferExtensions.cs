@@ -13,5 +13,10 @@ namespace Noise.Core.Extensions
 
             return BitConverter.ToInt32(bufferCopy, offset);
         }
+
+        public static string FromByteBufferToBase64(this byte[] buffer)
+        {
+            return Convert.ToBase64String(buffer);
+        }
     }
 }

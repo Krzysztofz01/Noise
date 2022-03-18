@@ -19,5 +19,10 @@ namespace Noise.Core.Extensions
         {
             return Encoding.UTF8.GetString(Convert.FromBase64String(value));
         }
+
+        public static byte[] FromBase64ToByteBuffer(this string value)
+        {
+            return Convert.FromBase64String(value);
+        }
     }
 }

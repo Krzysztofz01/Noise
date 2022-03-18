@@ -50,6 +50,40 @@ namespace Noise.Core.Test
         }
 
         [Fact]
+        public void AsymmetricSignatureHandlerShouldGenerateAndVerifyCorrectSignature()
+        {
+            string privateKey = AsymmetricEncryptionHandler.InitializePrivateKey();
+            string publicKey = AsymmetricEncryptionHandler.GetPublicKeyBase64(privateKey);
+
+            string plainTextMessage = "Hello World!";
+            string plainTextMessageBase64 = plainTextMessage.FromUtf8ToBase64();
+
+            var signature = AsymmetricSignatureHandler.GetSignatureBase64(plainTextMessageBase64, privateKey);
+
+            var verificationResult = AsymmetricSignatureHandler.VerifySignature(plainTextMessageBase64, signature, publicKey);
+
+            Assert.True(verificationResult);
+        }
+
+        [Fact]
+        public void AsymmetricSignatureHandlerShouldGenerateAndNotVerifyInvalidSignature()
+        {
+            string firstPrivateKey = AsymmetricEncryptionHandler.InitializePrivateKey();
+
+            string secondPrivateKey = AsymmetricEncryptionHandler.InitializePrivateKey();
+            string secondPublicKey = AsymmetricEncryptionHandler.GetPublicKeyBase64(secondPrivateKey);
+
+            string plainTextMessage = "Hello World!";
+            string plainTextMessageBase64 = plainTextMessage.FromUtf8ToBase64();
+
+            var signature = AsymmetricSignatureHandler.GetSignatureBase64(plainTextMessageBase64, firstPrivateKey);
+
+            var verificationResult = AsymmetricSignatureHandler.VerifySignature(plainTextMessageBase64, signature, secondPublicKey);
+
+            Assert.False(verificationResult);
+        }
+
+        [Fact]
         public void SymmetricHandlerShouldBeCreatedAndEncryptData()
         {
             string plainTextMessage = "Hello World!";
