@@ -50,24 +50,99 @@ namespace Noise.Core.Client
             _peerIp = _ipAddress.ToString();
         }
 
-        public void SendMessage(string receiverPublicKey, string message)
+        public async Task SendMessage(string receiverPublicKey, string message, CancellationToken cancellationToken = default)
+        {
+            try
+            {
+                var packetHandlingService = new PacketHandlingService();
+
+                var signature = _peerConfiguration.GetPeerByPublicKey(receiverPublicKey).SendingSignature;
+
+                var (keyPacket, messagePacket) = packetHandlingService.CreateMessagePackets(signature, receiverPublicKey, message);
+
+                var bufferStream = PacketBufferStreamBuilder
+                    .Create()
+                    .InsertPacket(keyPacket)
+                    .InsertPacket(messagePacket)
+                    .Build();
+
+                Connect();
+                await SendAsync(bufferStream, cancellationToken);
+                // Output
+            }
+            catch (Exception ex)
+            {
+                _output.WriteException("Sending message failed.", ex);
+            }
+            finally
+            {
+                Disconnect();
+            }
+        }
+
+        public async Task SendSignature(string receiverPublicKey, CancellationToken cancellationToken = default)
+        {
+            try
+            {
+                var packetHandlingService = new PacketHandlingService();
+
+                var certification = _peerConfiguration.IndependentMediumCertification ?? null;
+
+                var (keyPacket, signaturePacket, receiverIdentityProve) = packetHandlingService.CreateSignaturePacket(
+                    receiverPublicKey,
+                    _peerConfiguration.PublicKey,
+                    _peerConfiguration.PrivateKey,
+                    certification);
+
+                _peerConfiguration.GetPeerByPublicKey(receiverPublicKey).SetSendingSignature(receiverIdentityProve);
+
+                var bufferStream = PacketBufferStreamBuilder
+                    .Create()
+                    .InsertPacket(keyPacket)
+                    .InsertPacket(signaturePacket)
+                    .Build();
+
+                Connect();
+                await SendAsync(bufferStream, cancellationToken);
+                // Output
+            }
+            catch (Exception ex)
+            {
+                _output.WriteException("Sending signature failed.", ex);
+            }
+            finally
+            {
+                Disconnect();
+            }
+        }
+
+        public Task SendDiscovery(CancellationToken cancellationToken = default)
         {
             throw new NotImplementedException();
         }
 
-        public void SendSignature(string receiverPublicKey)
+        public async Task SendPing(CancellationToken cancellationToken = default)
         {
-            throw new NotImplementedException();
-        }
+            try
+            {
+                var packetHandlingService = new PacketHandlingService();
 
-        public void SendDiscovery()
-        {
-            throw new NotImplementedException();
-        }
+                var pingPacket = packetHandlingService.CreatePingPacket();
 
-        public void SendPing()
-        {
-            throw new NotImplementedException();
+                var pingPacketBuffer = pingPacket.GetBytes();
+
+                Connect();
+                await SendAsync(pingPacketBuffer, cancellationToken);
+                // Output
+            }
+            catch (Exception ex)
+            {
+                _output.WriteException("Sending ping failed.", ex);
+            }
+            finally
+            {
+                Disconnect();
+            }
         }
 
         public void Dispose()

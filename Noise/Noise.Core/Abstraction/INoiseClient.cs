@@ -1,12 +1,14 @@
 ﻿using System;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace Noise.Core.Abstraction
 {
     public interface INoiseClient : IDisposable
     {
-        void SendMessage(string receiverPublicKey, string message);
-        void SendSignature(string receiverPublicKey);
-        void SendDiscovery();
-        void SendPing();
+        Task SendMessage(string receiverPublicKey, string message, CancellationToken cancellationToken = default);
+        Task SendSignature(string receiverPublicKey, CancellationToken cancellationToken = default);
+        Task SendDiscovery(CancellationToken cancellationToken = default);
+        Task SendPing(CancellationToken cancellationToken = default);
     }
 }
