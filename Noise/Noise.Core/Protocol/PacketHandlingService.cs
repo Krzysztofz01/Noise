@@ -86,15 +86,15 @@ namespace Noise.Core.Protocol
             var keyPayload = Packet.Factory.FromBuffer<KeyPayload>(keyPacketBuffer).PeekPayload;
             var discoveryPayload = Packet.Factory.FromBuffer<DiscoveryPayload>(discoveryPacketBuffer).PeekPayload;
 
-            var discoveryKey = AsymmetricEncryptionHandler.Decrypt(keyPayload.MessageKey, receiverPrivateKey) ?? throw new PacketRejectedException();
-            var signatureKey = AsymmetricEncryptionHandler.Decrypt(keyPayload.IdentityProveKey, receiverPrivateKey) ?? throw new PacketRejectedException();
+            var discoveryKey = AsymmetricEncryptionHandler.Decrypt(keyPayload.MessageKey, receiverPrivateKey) ?? throw new PacketRejectedException(PacketRejectionReason.INVALID_RSA_PRIVATE_KEY);
+            var signatureKey = AsymmetricEncryptionHandler.Decrypt(keyPayload.IdentityProveKey, receiverPrivateKey) ?? throw new PacketRejectedException(PacketRejectionReason.INVALID_RSA_PRIVATE_KEY);
 
             var endpointsKey = discoveryKey.Split(',').First();
             var publicKeysKey = discoveryKey.Split(',').Last();
 
-            var signature = SymmetricEncryptionHandler.Decrypt(discoveryPayload.IdentityProve, signatureKey) ?? throw new PacketRejectedException();
-            var endpoints = SymmetricEncryptionHandler.Decrypt(discoveryPayload.Endpoints, endpointsKey) ?? throw new PacketRejectedException();
-            var publicKeys = SymmetricEncryptionHandler.Decrypt(discoveryPayload.PublicKeys, publicKeysKey) ?? throw new PacketRejectedException();
+            var signature = SymmetricEncryptionHandler.Decrypt(discoveryPayload.IdentityProve, signatureKey) ?? throw new PacketRejectedException(PacketRejectionReason.INVALID_AES_KEY);
+            var endpoints = SymmetricEncryptionHandler.Decrypt(discoveryPayload.Endpoints, endpointsKey) ?? throw new PacketRejectedException(PacketRejectionReason.INVALID_AES_KEY);
+            var publicKeys = SymmetricEncryptionHandler.Decrypt(discoveryPayload.PublicKeys, publicKeysKey) ?? throw new PacketRejectedException(PacketRejectionReason.INVALID_AES_KEY);
 
             var deserializedEndpoints = JsonSerializer.Deserialize<IEnumerable<string>>(endpoints);
             var deserializedPublicKeys = JsonSerializer.Deserialize<IEnumerable<string>>(publicKeys);
@@ -107,20 +107,20 @@ namespace Noise.Core.Protocol
             var keyPayload = Packet.Factory.FromBuffer<KeyPayload>(keyPacketBuffer).PeekPayload;
             var signaturePayload = Packet.Factory.FromBuffer<SignaturePayload>(signaturePacketBuffer).PeekPayload;
 
-            var signatureKeys = AsymmetricEncryptionHandler.Decrypt(keyPayload.MessageKey, receiverPrivateKey) ?? throw new PacketRejectedException();
+            var signatureKeys = AsymmetricEncryptionHandler.Decrypt(keyPayload.MessageKey, receiverPrivateKey) ?? throw new PacketRejectedException(PacketRejectionReason.INVALID_RSA_PRIVATE_KEY);
 
             var signatureKey = signatureKeys.Split(',').First();
             var senderPublicKeyKey = signatureKeys.Split(',').Skip(1).First();
             var asymmetricSignatureKey = signatureKeys.Split(',').Skip(2).First();
             var certificationKey = signatureKeys.Split(',').Last();
 
-            var signature = SymmetricEncryptionHandler.Decrypt(signaturePayload.Signature, signatureKey) ?? throw new PacketRejectedException();
-            var senderPublicKey = SymmetricEncryptionHandler.Decrypt(signaturePayload.SenderPublicKey, senderPublicKeyKey) ?? throw new PacketRejectedException();
-            var asymmetricSignature = SymmetricEncryptionHandler.Decrypt(signaturePayload.SenderAsymmetricSignature, asymmetricSignatureKey) ?? throw new PacketRejectedException();
-            var certification = SymmetricEncryptionHandler.Decrypt(signaturePayload.Certification, certificationKey) ?? throw new PacketRejectedException();
+            var signature = SymmetricEncryptionHandler.Decrypt(signaturePayload.Signature, signatureKey) ?? throw new PacketRejectedException(PacketRejectionReason.INVALID_AES_KEY);
+            var senderPublicKey = SymmetricEncryptionHandler.Decrypt(signaturePayload.SenderPublicKey, senderPublicKeyKey) ?? throw new PacketRejectedException(PacketRejectionReason.INVALID_AES_KEY);
+            var asymmetricSignature = SymmetricEncryptionHandler.Decrypt(signaturePayload.SenderAsymmetricSignature, asymmetricSignatureKey) ?? throw new PacketRejectedException(PacketRejectionReason.INVALID_AES_KEY);
+            var certification = SymmetricEncryptionHandler.Decrypt(signaturePayload.Certification, certificationKey) ?? throw new PacketRejectedException(PacketRejectionReason.INVALID_AES_KEY);
 
             if (!AsymmetricSignatureHandler.VerifySignature(signature.FromUtf8ToBase64(), asymmetricSignature, senderPublicKey))
-                throw new PacketRejectedException();
+                throw new PacketRejectedException(PacketRejectionReason.INVALID_RSA_SIGNATURE);
 
             return (signature, senderPublicKey, certification);
         }
@@ -130,11 +130,11 @@ namespace Noise.Core.Protocol
             var keyPayload = Packet.Factory.FromBuffer<KeyPayload>(keyPacketBuffer).PeekPayload;
             var messagePayload = Packet.Factory.FromBuffer<MessagePayload>(messagePacketBuffer).PeekPayload;
 
-            var messageKey = AsymmetricEncryptionHandler.Decrypt(keyPayload.MessageKey, receiverPrivateKey) ?? throw new PacketRejectedException();
-            var signatureKey = AsymmetricEncryptionHandler.Decrypt(keyPayload.IdentityProveKey, receiverPrivateKey) ?? throw new PacketRejectedException();
+            var messageKey = AsymmetricEncryptionHandler.Decrypt(keyPayload.MessageKey, receiverPrivateKey) ?? throw new PacketRejectedException(PacketRejectionReason.INVALID_RSA_PRIVATE_KEY);
+            var signatureKey = AsymmetricEncryptionHandler.Decrypt(keyPayload.IdentityProveKey, receiverPrivateKey) ?? throw new PacketRejectedException(PacketRejectionReason.INVALID_RSA_PRIVATE_KEY);
 
-            var message = SymmetricEncryptionHandler.Decrypt(messagePayload.MessageCipher, messageKey) ?? throw new PacketRejectedException();
-            var signature = SymmetricEncryptionHandler.Decrypt(messagePayload.IdentityProve, signatureKey) ?? throw new PacketRejectedException();
+            var message = SymmetricEncryptionHandler.Decrypt(messagePayload.MessageCipher, messageKey) ?? throw new PacketRejectedException(PacketRejectionReason.INVALID_AES_KEY);
+            var signature = SymmetricEncryptionHandler.Decrypt(messagePayload.IdentityProve, signatureKey) ?? throw new PacketRejectedException(PacketRejectionReason.INVALID_AES_KEY);
 
             return (signature, message);
         }

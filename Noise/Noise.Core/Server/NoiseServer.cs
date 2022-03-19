@@ -103,9 +103,9 @@ namespace Noise.Core.Server
                 LogVerbose($"Signature received successful.");
                 _peerConfiguration.InsertPeer(senderPublicKey, signature);
             }
-            catch (PacketRejectedException)
+            catch (PacketRejectedException ex)
             {
-                LogVerbose("The destination of the received packet was not matching to given key pair.");
+                LogVerbose(ex.Message);
             }
             catch (Exception ex)
             {
@@ -147,8 +147,7 @@ namespace Noise.Core.Server
 
                 if (!_peerConfiguration.IsReceivingSignatureValid(senderIdentityProve))
                 {
-                    LogVerbose($"Unknown peer with no signature valid or assigned signature tried to send message packets from: {senderEndpoint}");
-                    return;
+                    throw new PacketRejectedException(PacketRejectionReason.INVALID_IDENTITY_PROVE);
                 }
 
                 var senderPeer = _peerConfiguration.GetPeerByReceivingSignature(senderIdentityProve);
@@ -160,9 +159,9 @@ namespace Noise.Core.Server
                     senderEndpoint,
                     message);
             }
-            catch (PacketRejectedException)
+            catch (PacketRejectedException ex)
             {
-                LogVerbose("The destination of the received packet was not matching to given key pair.");
+                LogVerbose(ex.Message);
             }
             catch (Exception ex)
             {
