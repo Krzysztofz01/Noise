@@ -1,6 +1,7 @@
 ﻿using Noise.Core.Abstraction;
 using Noise.Core.Encryption;
 using Noise.Core.Exceptions;
+using Noise.Core.Extensions;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.Json;
@@ -57,17 +58,19 @@ namespace Noise.Core.Protocol
             return pingPacket;
         }
 
-        public (IPacket keyPacket, IPacket signaturePacket, string receiverIdentityProve) CreateSignaturePacket(string receiverPublicKey, string senderPublicKey, string certification = null)
+        public (IPacket keyPacket, IPacket signaturePacket, string receiverIdentityProve) CreateSignaturePacket(string receiverPublicKey, string senderPublicKey, string senderPrivateKey, string certification = null)
         {
             var signature = SignatureBuilder.GenerateSignature();
+            var asymmetricSignature = AsymmetricSignatureHandler.GetSignatureBase64(signature.FromUtf8ToBase64(), senderPrivateKey);
 
             var (signatureCipher, signatureKey) = SymmetricEncryptionHandler.Encrypt(signature);
             var (senderPublicKeyCipher, senderPublicKeyKey) = SymmetricEncryptionHandler.Encrypt(senderPublicKey);
+            var (asymmetricSignatureCipher, asymmetricSignatureKey) = SymmetricEncryptionHandler.Encrypt(asymmetricSignature);
             var (certificationCipher, certificationKey) = SymmetricEncryptionHandler.Encrypt(certification ?? string.Empty);
 
-            var signatureKeys = $"{signatureKey},{senderPublicKeyKey},{certificationKey}";
+            var signatureKeys = $"{signatureKey},{senderPublicKeyKey},{asymmetricSignatureKey},{certificationKey}";
 
-            var signaturePayload = SignaturePayload.Factory.Create(signatureCipher, senderPublicKeyCipher, certificationCipher);
+            var signaturePayload = SignaturePayload.Factory.Create(signatureCipher, senderPublicKeyCipher, asymmetricSignatureCipher, certificationCipher);
             var signaturePacket = Packet<SignaturePayload>.Factory.FromPayload(signaturePayload);
 
             var signatureKeyCipher = AsymmetricEncryptionHandler.Encrypt(signatureKeys, receiverPublicKey);
@@ -108,11 +111,16 @@ namespace Noise.Core.Protocol
 
             var signatureKey = signatureKeys.Split(',').First();
             var senderPublicKeyKey = signatureKeys.Split(',').Skip(1).First();
+            var asymmetricSignatureKey = signatureKeys.Split(',').Skip(2).First();
             var certificationKey = signatureKeys.Split(',').Last();
 
             var signature = SymmetricEncryptionHandler.Decrypt(signaturePayload.Signature, signatureKey) ?? throw new PacketRejectedException();
             var senderPublicKey = SymmetricEncryptionHandler.Decrypt(signaturePayload.SenderPublicKey, senderPublicKeyKey) ?? throw new PacketRejectedException();
+            var asymmetricSignature = SymmetricEncryptionHandler.Decrypt(signaturePayload.SenderAsymmetricSignature, asymmetricSignatureKey) ?? throw new PacketRejectedException();
             var certification = SymmetricEncryptionHandler.Decrypt(signaturePayload.Certification, certificationKey) ?? throw new PacketRejectedException();
+
+            if (!AsymmetricSignatureHandler.VerifySignature(signature.FromUtf8ToBase64(), asymmetricSignature, senderPublicKey))
+                throw new PacketRejectedException();
 
             return (signature, senderPublicKey, certification);
         }
