@@ -118,7 +118,7 @@ namespace Noise.Core.Server
             var senderEndpoint = e.PeerEndpoint;
             LogVerbose($"Server received ping packets from peer: {senderEndpoint}");
 
-            _outputMonitor.WritePing(senderEndpoint);
+            _outputMonitor.WriteIncomingPing(senderEndpoint);
         }
 
         private void PeerDisconnectedEventHandler(object sender, PeerDisconnectedEventArgs e)
@@ -154,7 +154,7 @@ namespace Noise.Core.Server
                 var senderPeer = _peerConfiguration.GetPeerByReceivingSignature(senderIdentityProve);
 
                 LogVerbose($"Message received successful.");
-                _outputMonitor.WriteMessage(
+                _outputMonitor.WriteIncomingMessage(
                     senderPeer.PublicKey,
                     senderPeer.Alias,
                     senderEndpoint,

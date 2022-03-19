@@ -13,11 +13,11 @@ namespace Noise.Core.Client
 {
     public class NoiseClient : INoiseClient
     {
-        private readonly IOutput _output;
+        private readonly IOutputMonitor<NoiseClient> _outputMonitor;
         private readonly PeerConfiguration _peerConfiguration;
         private readonly NoiseClientConfiguration _noiseClientConfiguration;
 
-        private string _peerIp = null;
+        private readonly string _peerIp = null;
         private readonly IPAddress _ipAddress = null;
         private TcpClient _tcpClient = null;
         private NetworkStream _networkStream = null;
@@ -28,14 +28,11 @@ namespace Noise.Core.Client
         private CancellationTokenSource _tokenSource = new CancellationTokenSource();
         private CancellationToken _token;
 
-        private DateTime _lastActivity = DateTime.Now;
-        private bool _isTimeout = false;
-
         private NoiseClient() { }
-        public NoiseClient(string endpoint, IOutput output, PeerConfiguration peerConfiguration, NoiseClientConfiguration noiseClientConfiguration)
+        public NoiseClient(string endpoint, IOutputMonitor<NoiseClient> outputMonitor, PeerConfiguration peerConfiguration, NoiseClientConfiguration noiseClientConfiguration)
         {
-            _output = output ??
-                throw new ArgumentNullException(nameof(output));
+            _outputMonitor = outputMonitor ??
+                throw new ArgumentNullException(nameof(outputMonitor));
 
             _peerConfiguration = peerConfiguration ??
                 throw new ArgumentNullException(nameof(peerConfiguration));
@@ -66,13 +63,14 @@ namespace Noise.Core.Client
                     .InsertPacket(messagePacket)
                     .Build();
 
+                _outputMonitor.WriteOutgoingMessage(message);
+
                 Connect();
                 await SendAsync(bufferStream, cancellationToken);
-                // Output
             }
             catch (Exception ex)
             {
-                _output.WriteException("Sending message failed.", ex);
+                _outputMonitor.LogError(ex);
             }
             finally
             {
@@ -102,13 +100,14 @@ namespace Noise.Core.Client
                     .InsertPacket(signaturePacket)
                     .Build();
 
+                _outputMonitor.WriteOutgoingSignature(receiverPublicKey);
+
                 Connect();
                 await SendAsync(bufferStream, cancellationToken);
-                // Output
             }
             catch (Exception ex)
             {
-                _output.WriteException("Sending signature failed.", ex);
+                _outputMonitor.LogError(ex);
             }
             finally
             {
@@ -131,13 +130,14 @@ namespace Noise.Core.Client
 
                 var pingPacketBuffer = pingPacket.GetBytes();
 
+                _outputMonitor.WriteOutgoingPing(_peerIp);
+
                 Connect();
                 await SendAsync(pingPacketBuffer, cancellationToken);
-                // Output
             }
             catch (Exception ex)
             {
-                _output.WriteException("Sending ping failed.", ex);
+                _outputMonitor.LogError(ex);
             }
             finally
             {
@@ -155,6 +155,8 @@ namespace Noise.Core.Client
         {
             if (disposing)
             {
+                LogVerbose("Disposing the noise client.");
+
                 try
                 {
                     _isConnected = false;
@@ -180,12 +182,12 @@ namespace Noise.Core.Client
                         _tcpClient.Dispose();
                     }
                 }
-                catch (Exception)
+                catch (Exception ex)
                 {
-                    _output.WriteLog("Some errors occured while disposing the client.");
+                    _outputMonitor.LogError("Some errors occured while disposing the client.", ex);
                 }
 
-                _output.WriteLog("Client disposed.");
+                LogVerbose("Noise client disposed.");
             }
         }
 
@@ -193,13 +195,13 @@ namespace Noise.Core.Client
         {
             if (_isConnected)
             {
-                _output.WriteLog("The noise client is already connected to a peer.");
+                LogVerbose("The noise client is already connected to a peer.");
                 return;
             }
 
-            _output.WriteLog("Initializing the noise client.");
+            LogVerbose("Initializing the noise client.");
             _tcpClient = new TcpClient();
-            _output.WriteLog("Noise client initialized.");
+            LogVerbose("Noise client initialized.");
 
             _tokenSource = new CancellationTokenSource();
             
@@ -222,7 +224,7 @@ namespace Noise.Core.Client
                 {
                     try
                     {
-                        _output.WriteLog($"Attempting connection to {_peerIp}. Tries: {retryCount}.");
+                        LogVerbose($"Attempting connection to {_peerIp}. Tries: {retryCount}.");
 
                         _tcpClient.Dispose();
                         _tcpClient = new TcpClient();
@@ -230,7 +232,7 @@ namespace Noise.Core.Client
 
                         if (_tcpClient.Connected)
                         {
-                            _output.WriteLog($"Connected successful to {_peerIp}.");
+                            LogVerbose($"Connected successful to {_peerIp}.");
                             break;
                         }
 
@@ -244,9 +246,9 @@ namespace Noise.Core.Client
                     {
                         break;
                     }
-                    catch (Exception _)
+                    catch (Exception)
                     {
-                        _output.WriteLog($"Connection to {_peerIp} failed.");
+                        LogVerbose($"Connection to {_peerIp} failed.");
                     }
                     finally
                     {
@@ -269,25 +271,23 @@ namespace Noise.Core.Client
                 _networkStream = _tcpClient.GetStream();
                 _networkStream.ReadTimeout = _noiseClientConfiguration.ReadTimeoutMs;
             }
-            catch (Exception _)
+            catch (Exception)
             {
                 throw;
             }
 
             _isConnected = true;
-            _lastActivity = DateTime.Now;
-            _isTimeout = false;
         }
 
         private void Disconnect()
         {
             if (!_isConnected)
             {
-                _output.WriteLog("The noise client has already disconnected from the peer.");
+                LogVerbose("The noise client has already disconnected from the peer.");
                 return;
             }
 
-            _output.WriteLog($"Disconnecting from the peer ${_peerIp}");
+            LogVerbose($"Disconnecting from the peer ${_peerIp}");
 
             _tokenSource.Cancel();
             _tcpClient.Close();
@@ -302,7 +302,7 @@ namespace Noise.Core.Client
             if (!_isConnected)
                 throw new IOException("Connection with a peer is not established.");
 
-            if (token == default(CancellationToken)) token = _token;
+            if (token == default) token = _token;
 
             using var memoryStream = new MemoryStream();
             await memoryStream.WriteAsync(dataBuffer, 0, dataBuffer.Length, token).ConfigureAwait(false);
@@ -331,18 +331,27 @@ namespace Noise.Core.Client
             }
             catch (TaskCanceledException)
             {
+                LogVerbose("Sending task canceled.");
             }
             catch (OperationCanceledException)
             {
+                LogVerbose("Sending operation canceled.");
             }
             catch (Exception)
             {
-                _output.WriteLog("Sending failure.");
+                LogVerbose("Unexpected sending failure.");
+                throw;
             }
             finally
             {
                 _sendLock.Release();
             }
+        }
+
+        private void LogVerbose(string message)
+        {
+            if (_noiseClientConfiguration.VerboseMode)
+                _outputMonitor.LogInformation(message);
         }
     }
 }
