@@ -7,6 +7,7 @@ using Noise.Core.Server.Events;
 using System;
 using System.Collections.Concurrent;
 using System.IO;
+using System.Linq;
 using System.Net;
 using System.Net.Sockets;
 using System.Threading;
@@ -16,7 +17,7 @@ namespace Noise.Core.Server
 {
     public class NoiseServer : INoiseServer
     {
-        private readonly IOutputMonitor<NoiseServer> _outputMonitor;
+        private readonly IOutputMonitor _outputMonitor;
         private readonly PeerConfiguration _peerConfiguration;
         private readonly NoiseServerConfiguration _noiseServerConfiguration;
 
@@ -38,7 +39,7 @@ namespace Noise.Core.Server
         private CancellationToken _token;
 
         private NoiseServer() { }
-        public NoiseServer(IOutputMonitor<NoiseServer> outputMonitor, PeerConfiguration peerConfiguration, NoiseServerConfiguration noiseServerConfiguration)
+        public NoiseServer(IOutputMonitor outputMonitor, PeerConfiguration peerConfiguration, NoiseServerConfiguration noiseServerConfiguration = null)
         {
             _outputMonitor = outputMonitor ??
                 throw new ArgumentNullException(nameof(outputMonitor));
@@ -47,7 +48,7 @@ namespace Noise.Core.Server
                 throw new ArgumentNullException(nameof(peerConfiguration));
 
             _noiseServerConfiguration = noiseServerConfiguration ??
-                throw new ArgumentNullException(nameof(noiseServerConfiguration));
+                new NoiseServerConfiguration();
 
             OnDiscoveryReceived += DiscoveryReceivedEventHandler;
             OnMessageReceived += MessageReceivedEventHandler;
@@ -503,7 +504,17 @@ namespace Noise.Core.Server
             if (packetBuffer.Length < Constants.PacketBaseSize)
                 throw new ArgumentException("Invalid buffer size, the packet may be corrupted.");
 
-            return (PacketType)packetBuffer.ToInt32(4);
+            // The inconsistency in PacketBufferStreamBuilder can cause overflow errors
+            if ((PacketType)packetBuffer.ToInt32(4 + sizeof(Int32)) != PacketType.KEY)
+                return (PacketType)packetBuffer.ToInt32(4);
+
+            var keyProtectedBuffer = PacketBufferQueueBuilder
+                .Create()
+                .InsertBuffer(packetBuffer)
+                .Build()
+                .Last();
+
+            return (PacketType)keyProtectedBuffer.ToInt32(4);
         }
 
         private void LogVerbose(string message)
