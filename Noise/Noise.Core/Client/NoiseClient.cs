@@ -13,7 +13,7 @@ namespace Noise.Core.Client
 {
     public class NoiseClient : INoiseClient
     {
-        private readonly IOutputMonitor<NoiseClient> _outputMonitor;
+        private readonly IOutputMonitor _outputMonitor;
         private readonly PeerConfiguration _peerConfiguration;
         private readonly NoiseClientConfiguration _noiseClientConfiguration;
 
@@ -29,7 +29,7 @@ namespace Noise.Core.Client
         private CancellationToken _token;
 
         private NoiseClient() { }
-        public NoiseClient(string endpoint, IOutputMonitor<NoiseClient> outputMonitor, PeerConfiguration peerConfiguration, NoiseClientConfiguration noiseClientConfiguration)
+        public NoiseClient(string endpoint, IOutputMonitor outputMonitor, PeerConfiguration peerConfiguration, NoiseClientConfiguration noiseClientConfiguration = null)
         {
             _outputMonitor = outputMonitor ??
                 throw new ArgumentNullException(nameof(outputMonitor));
@@ -38,13 +38,13 @@ namespace Noise.Core.Client
                 throw new ArgumentNullException(nameof(peerConfiguration));
 
             _noiseClientConfiguration = noiseClientConfiguration ??
-                throw new ArgumentNullException(nameof(noiseClientConfiguration));
+                new NoiseClientConfiguration();
 
             if (!IPAddress.TryParse(endpoint, out var parsedEndpoint))
                 throw new ArgumentException("Invalid endpoint provided.", nameof(endpoint));
 
-            _ipAddress = Dns.GetHostEntry(parsedEndpoint).AddressList.First();
-            _peerIp = _ipAddress.ToString();
+            _ipAddress = parsedEndpoint;
+            _peerIp = parsedEndpoint.ToString();
         }
 
         public async Task SendMessage(string receiverPublicKey, string message, CancellationToken cancellationToken = default)

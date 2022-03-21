@@ -2,7 +2,7 @@
 
 namespace Noise.Core.Abstraction
 {
-    public interface IOutputMonitor<TContext> where TContext : class
+    public interface IOutputMonitor
     {
         void LogError(string message);
         void LogError(Exception exception);
