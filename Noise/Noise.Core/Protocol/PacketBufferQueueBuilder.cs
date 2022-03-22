@@ -52,5 +52,23 @@ namespace Noise.Core.Protocol
 
         public static PacketBufferQueueBuilder Create() => new();
         private PacketBufferQueueBuilder() => _buffer = new List<byte>();
+
+        public static bool IsBufferQueue(byte[] buffer, PacketType? assumePacketType = null)
+        {
+            if (buffer.Length < _baseSizeOffset)
+                return false;
+
+            int expectedSize = buffer.ToInt32(0) + _baseSizeOffset;
+
+            if (buffer.Length != expectedSize) return false;
+
+            if (assumePacketType.HasValue)
+            {
+                var firstBufferType = (PacketType)buffer.ToInt32(_baseSizeOffset + sizeof(Int32));
+                return firstBufferType == assumePacketType.Value;
+            }
+
+            return true;
+        }
     }
 }

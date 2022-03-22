@@ -357,7 +357,7 @@ namespace Noise.Core.Test
         }
 
         [Fact]
-        public void PacketBufferAndQueueBilderShouldBuild()
+        public void PacketBufferAndQueueBuilderShouldBuild()
         {
             var pingPayload = PingPayload.Factory.Create();
             var pingPacket = Packet<PingPayload>.Factory.FromPayload(pingPayload);
@@ -385,6 +385,30 @@ namespace Noise.Core.Test
 
             Assert.Equal(pingPacket, builtPingPacket);
             Assert.Equal(discoveryPacket, builtDiscoveryPacket);
+        }
+
+        [Fact]
+        public void BufferQueueBuilderShouldDetermineIfBufferIsAQueue()
+        {
+            var packet = Packet<PingPayload>.Factory.FromPayload(PingPayload.Factory.Create());
+
+            var singlePacketBuffer = packet.GetBytes();
+
+            var multiplePacketBuffer = PacketBufferStreamBuilder
+                .Create()
+                .InsertPacket(packet)
+                .InsertPacket(packet)
+                .Build();
+
+            var isSigleBuffer = PacketBufferQueueBuilder.IsBufferQueue(singlePacketBuffer);
+
+            var isQueueBuffer = PacketBufferQueueBuilder.IsBufferQueue(multiplePacketBuffer);
+
+            var isQueueBufferButDifferentType = PacketBufferQueueBuilder.IsBufferQueue(multiplePacketBuffer, PacketType.MESSAGE);
+
+            Assert.False(isSigleBuffer);
+            Assert.True(isQueueBuffer);
+            Assert.False(isQueueBufferButDifferentType);
         }
 
         public PeerConfiguration MockupPeerConfiguration()

@@ -504,17 +504,15 @@ namespace Noise.Core.Server
             if (packetBuffer.Length < Constants.PacketBaseSize)
                 throw new ArgumentException("Invalid buffer size, the packet may be corrupted.");
 
-            // The inconsistency in PacketBufferStreamBuilder can cause overflow errors
-            if ((PacketType)packetBuffer.ToInt32(4 + sizeof(Int32)) != PacketType.KEY)
-                return (PacketType)packetBuffer.ToInt32(4);
+            if (PacketBufferQueueBuilder.IsBufferQueue(packetBuffer))
+            {
+                return (PacketType)PacketBufferQueueBuilder
+                    .Create().InsertBuffer(packetBuffer).Build()
+                    .Skip(1).First()
+                    .ToInt32(sizeof(Int32));
+            }
 
-            var keyProtectedBuffer = PacketBufferQueueBuilder
-                .Create()
-                .InsertBuffer(packetBuffer)
-                .Build()
-                .Last();
-
-            return (PacketType)keyProtectedBuffer.ToInt32(4);
+            return (PacketType)packetBuffer.ToInt32(sizeof(Int32));
         }
 
         private void LogVerbose(string message)
