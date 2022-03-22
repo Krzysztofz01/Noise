@@ -108,6 +108,10 @@ namespace Noise.Core.Server
             {
                 LogVerbose(ex.Message);
             }
+            catch (PeerDataException ex)
+            {
+                LogVerbose(ex.Message);
+            }
             catch (Exception ex)
             {
                 LogVerbose($"Unexpected exception while receiving message packets. {ex.Message}");
@@ -161,6 +165,10 @@ namespace Noise.Core.Server
                     message);
             }
             catch (PacketRejectedException ex)
+            {
+                LogVerbose(ex.Message);
+            }
+            catch (PeerDataException ex)
             {
                 LogVerbose(ex.Message);
             }

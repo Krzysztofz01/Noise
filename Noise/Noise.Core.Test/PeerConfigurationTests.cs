@@ -1,4 +1,5 @@
-﻿using Noise.Core.Peer;
+﻿using Noise.Core.Exceptions;
+using Noise.Core.Peer;
 using Noise.Core.Protocol;
 using System;
 using System.Collections.Generic;
@@ -102,7 +103,7 @@ namespace Noise.Core.Test
             pc.InsertPeer(key, signature);
 
             Assert.NotEqual(alias, pc.GetPeerByPublicKey(key).Alias);
-            Assert.Throws<InvalidOperationException>(() =>
+            Assert.Throws<PeerDataException>(() =>
             {
                 pc.GetPeerByAlias(alias);
             });

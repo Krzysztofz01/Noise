@@ -1,4 +1,5 @@
 ﻿using Noise.Core.Encryption;
+using Noise.Core.Exceptions;
 using Noise.Core.Extensions;
 using System;
 using System.Collections.Generic;
@@ -104,22 +105,26 @@ namespace Noise.Core.Peer
 
         public RemotePeer GetPeerByAlias(string alias)
         {
-            return Peers.Single(p => p.Alias == alias);
+            return Peers.SingleOrDefault(p => p.Alias == alias) ??
+                    throw new PeerDataException(PeerDataProblemType.ALIAS_NOT_FOUND);
         }
 
         public RemotePeer GetPeerByPublicKey(string publicKey)
         {
-            return Peers.Single(p => p.PublicKey == publicKey);
+            return Peers.SingleOrDefault(p => p.PublicKey == publicKey) ??
+                    throw new PeerDataException(PeerDataProblemType.PUBLIC_KEY_NOT_FOUND);
         }
 
         public RemotePeer GetPeerByOrdinalNumberIdentifier(int id)
         {
-            return Peers.Single(p => p.Identifier == id);
+            return Peers.SingleOrDefault(p => p.Identifier == id) ??
+                throw new PeerDataException(PeerDataProblemType.ORDINAL_NUMER_NOT_FOUND);
         }
 
         public RemotePeer GetPeerByReceivingSignature(string receivingSignature)
         {
-            return Peers.Single(p => p.ReceivingSignature == receivingSignature);
+            return Peers.SingleOrDefault(p => p.ReceivingSignature == receivingSignature) ??
+                throw new PeerDataException(PeerDataProblemType.SIGNATURE_NOT_FOUND);
         }
 
         public bool IsEndpointKnown(string endpoint)

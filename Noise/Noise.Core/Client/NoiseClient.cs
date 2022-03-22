@@ -1,9 +1,9 @@
 ﻿using Noise.Core.Abstraction;
+using Noise.Core.Exceptions;
 using Noise.Core.Peer;
 using Noise.Core.Protocol;
 using System;
 using System.IO;
-using System.Linq;
 using System.Net;
 using System.Net.Sockets;
 using System.Threading;
@@ -68,6 +68,10 @@ namespace Noise.Core.Client
                 Connect();
                 await SendAsync(bufferStream, cancellationToken);
             }
+            catch (PeerDataException ex)
+            {
+                LogVerbose(ex.Message);
+            }
             catch (Exception ex)
             {
                 _outputMonitor.LogError(ex);
@@ -105,6 +109,10 @@ namespace Noise.Core.Client
                 Connect();
                 await SendAsync(bufferStream, cancellationToken);
             }
+            catch (PeerDataException ex)
+            {
+                LogVerbose(ex.Message);
+            }
             catch (Exception ex)
             {
                 _outputMonitor.LogError(ex);
@@ -134,6 +142,10 @@ namespace Noise.Core.Client
 
                 Connect();
                 await SendAsync(pingPacketBuffer, cancellationToken);
+            }
+            catch (PeerDataException ex)
+            {
+                LogVerbose(ex.Message);
             }
             catch (Exception ex)
             {
