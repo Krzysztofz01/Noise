@@ -1,10 +1,10 @@
 ﻿using Noise.Core.Abstraction;
-using Noise.Core.Client;
+using Noise.Core.Exceptions;
 using Noise.Core.File;
 using Noise.Core.Peer;
 using Noise.Core.Server;
-using Noise.Core.Services;
 using Noise.Host.Abstraction;
+using Noise.Host.Exceptions;
 using System;
 using System.Threading;
 using System.Threading.Tasks;
@@ -16,75 +16,89 @@ namespace Noise.Host
         private const int SUCCESS = 0;
         private const int FAILURE = 1;
 
-        private static PeerConfiguration _peerConfiguration;
-        private static IOutput _output;
-        private static IPacketService _packetService;
-        private static ICommandHandler _commandHandler;
+        public static IOutputMonitor OutputMonitor;
+        public static ICommandHandler CommandHandler;
+        public static PeerConfiguration PeerConfiguration;
 
         private static async Task<int> Main(string[] args)
         {
             try
             {
-                // Singleton dependencies configuration
-                _peerConfiguration = await SetupPeer();
-                _output = new ConsoleOutput();
-                _packetService = new PacketService();
-
+                // Initialization
+                await InitializeServices();
                 var cts = new CancellationTokenSource();
 
-                // Server setup
-                using var server = new NoiseServer(_output, _packetService, _peerConfiguration);         
+                // Server
+                using INoiseServer server = new NoiseServer(OutputMonitor, PeerConfiguration);
                 _ = Task.Run(async () => await server.StartAsync(cts.Token));
 
-                // Client setup
-                using var client = new NoiseClient(_peerConfiguration);
-
-                // Client command handler init
-                _commandHandler = new CommandHandler(_peerConfiguration, _output, _packetService, client, cts);
-
+                // Program loop
                 while (!cts.Token.IsCancellationRequested)
                 {
                     try
                     {
-                        _commandHandler.Prefix();
-
-                        await _commandHandler.Execute(Console.ReadLine());
+                        CommandHandler.Prefix();
+                        await CommandHandler.Execute(Console.ReadLine(), cts);
+                    }
+                    catch (CommandHandlerException ex)
+                    {
+                        OutputMonitor.LogError(ex);
                     }
                     catch (Exception ex)
                     {
-                        _output.WriteException("Command exception", ex);
+                        OutputMonitor.LogError("Unexpected failure.");
+                        cts.Cancel();
+
                     }
                 }
 
-                await FileHandler.SavePeerConfigurationFile(_peerConfiguration);
-                Thread.Sleep(1000);
+                server.Stop();
+                Thread.Sleep(1500);
+
+                await FileHandler.SavePeerConfigurationCipher(PeerConfiguration);
+                Thread.Sleep(1500);
 
                 return SUCCESS;
             }
-            catch (Exception)
+            catch (Exception ex)
             {
+                Console.WriteLine("Fatal application failure.");
+                Console.WriteLine(ex.Message);
                 return FAILURE;
             }
         }
 
-        private async static Task<PeerConfiguration> SetupPeer()
+        private async static Task InitializeServices()
+        {
+            OutputMonitor = new OutputMonitor();
+            CommandHandler = null;
+
+            string peerPassword = ConsoleUtility.ReadSecret("Peer password: ");
+            PeerConfiguration = await GetPeerConfiguration(peerPassword);
+        }
+
+        private async static Task<PeerConfiguration> GetPeerConfiguration(string peerPassword)
         {
             try
             {
                 if (FileHandler.PeerConfigurationFileExists())
                 {
-                    return FileHandler.GetPeerConfiguration();
+                    var peerConfigurationCipher = FileHandler.GetPeerConfigurationCipher();
+
+                    return PeerEncryption.DecryptPeerConfiguration(peerConfigurationCipher, peerPassword) ??
+                        throw new PeerDataException(PeerDataProblemType.WRONG_PEER_SECRET);
                 }
 
-                var peerConfiguration = PeerConfiguration.Factory.Initialize();
+                OutputMonitor.LogInformation("No peer file found. New peer created with the provided password.");
+                var initializedPeerConfiguration = PeerConfiguration.Factory.Initialize(peerPassword);
 
-                await FileHandler.SavePeerConfigurationFile(peerConfiguration);
+                await FileHandler.SavePeerConfigurationCipher(initializedPeerConfiguration);
 
-                return peerConfiguration;
+                return initializedPeerConfiguration;
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                Console.WriteLine("Fatal error. Can not utilize configuration.");
+                OutputMonitor.LogError(ex);
                 throw;
             }
         }
