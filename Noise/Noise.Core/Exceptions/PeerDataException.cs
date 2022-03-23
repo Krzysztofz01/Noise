@@ -9,6 +9,7 @@ namespace Noise.Core.Exceptions
         public const string _endpointNotFound = "Given endpoint is unknown or is ambiguous.";
         public const string _aliasNotFound = "Peer with given alias not found or is ambiguous.";
         public const string _ordinalNumberNotFound = "Peer with given ordinal number not found or is ambiguous.";
+        public const string _wrongPeerSecret = "Invalid password for given peer.";
         public const string _undefinedMessage = "Unexpected peer data behavior.";
 
         private PeerDataException() { }
@@ -23,6 +24,7 @@ namespace Noise.Core.Exceptions
                 PeerDataProblemType.ENDPOINT_NOT_FOUND => _endpointNotFound,
                 PeerDataProblemType.ALIAS_NOT_FOUND => _aliasNotFound,
                 PeerDataProblemType.ORDINAL_NUMER_NOT_FOUND => _ordinalNumberNotFound,
+                PeerDataProblemType.WRONG_PEER_SECRET => _wrongPeerSecret,
                 _ => _undefinedMessage,
             };
         }
@@ -34,6 +36,7 @@ namespace Noise.Core.Exceptions
         SIGNATURE_NOT_FOUND,
         ENDPOINT_NOT_FOUND,
         ALIAS_NOT_FOUND,
-        ORDINAL_NUMER_NOT_FOUND
+        ORDINAL_NUMER_NOT_FOUND,
+        WRONG_PEER_SECRET,
     }
 }

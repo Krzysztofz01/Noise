@@ -16,9 +16,13 @@ namespace Noise.Core.Abstraction
 
         void WriteIncomingMessage(string senderPublicKey, string senderAlias, string senderEndpoint, string message);
         void WriteOutgoingMessage(string message);
-        void WriteIncomingSignature(string senderPublicKey);
+        void WriteIncomingSignature(string senderPublicKey, string senderEndpoint);
         void WriteOutgoingSignature(string receiverPublicKey);
-        void WriteIncomingPing(string receiverEndpoint);
-        void WriteOutgoingPing(string senderEndpoint);
+        void WriteIncomingPing(string senderEndpoint);
+        void WriteOutgoingPing(string receiverEndpoint);
+
+        void WriteRaw(string content, bool newLine = true);
+
+        void Clear();
     }
 }

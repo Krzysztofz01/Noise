@@ -7,5 +7,6 @@ namespace Noise.Core.Abstraction
     public interface INoiseServer : IDisposable
     {
         Task StartAsync(CancellationToken cancellationToken);
+        void Stop();
     }
 }
