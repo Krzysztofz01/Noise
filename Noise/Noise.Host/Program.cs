@@ -48,7 +48,6 @@ namespace Noise.Host
                     {
                         OutputMonitor.LogError("Unexpected failure.");
                         cts.Cancel();
-
                     }
                 }
 
@@ -71,7 +70,7 @@ namespace Noise.Host
         private async static Task InitializeServices()
         {
             OutputMonitor = new OutputMonitor();
-            CommandHandler = null;
+            CommandHandler = new CommandHandler(OutputMonitor);
 
             string peerPassword = ConsoleUtility.ReadSecret("Peer password: ");
             PeerConfiguration = await GetPeerConfiguration(peerPassword);

@@ -1,24 +1,13 @@
 ﻿using System;
-using System.Runtime.Serialization;
 
 namespace Noise.Host.Exceptions
 {
     public class CommandHandlerException : Exception
     {
-        public CommandHandlerException()
-        {
-        }
+        private const string _defaultMessage = "Invalid command or operation. Type HELP to get further information.";
 
-        public CommandHandlerException(string message) : base(message)
-        {
-        }
+        private CommandHandlerException() { }
+        public CommandHandlerException(string message = null) : base(message ?? _defaultMessage) { }
 
-        public CommandHandlerException(string message, Exception innerException) : base(message, innerException)
-        {
-        }
-
-        protected CommandHandlerException(SerializationInfo info, StreamingContext context) : base(info, context)
-        {
-        }
     }
 }
