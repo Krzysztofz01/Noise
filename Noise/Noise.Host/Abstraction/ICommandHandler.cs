@@ -7,5 +7,6 @@ namespace Noise.Host.Abstraction
     {
         void Prefix();
         Task Execute(string command, CancellationTokenSource cancellationTokenSource);
+        void Config(string[] args);
     }
 }

@@ -30,6 +30,32 @@ namespace Noise.Host
                 await InitializeServices();
                 var cts = new CancellationTokenSource();
 
+                // Apply config if launched with config flag
+                if (args.FirstIs("--config"))
+                {
+                    try
+                    {
+                        OutputMonitor.LogInformation("The Noise peer host started in configuration mode.");
+
+                        CommandHandler.Config(args);
+
+                        await FileHandler.SavePeerConfigurationCipher(PeerConfiguration);
+
+                    }
+                    catch (CommandHandlerException ex)
+                    {
+                        OutputMonitor.LogError($"{Environment.NewLine}{ex.Message}");
+                    }
+                    catch (Exception ex)
+                    {
+                        OutputMonitor.LogError($"{Environment.NewLine}Unexpected failure.", ex);
+                        cts.Cancel();
+
+                        return FAILURE;
+                    }
+                    return SUCCESS;
+                }
+
                 // Server
                 using INoiseServer server = new NoiseServer(OutputMonitor, PeerConfiguration, GetNoiseServerConfiguration());
                 _ = Task.Run(async () => await server.StartAsync(cts.Token));

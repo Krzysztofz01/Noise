@@ -71,6 +71,12 @@ namespace Noise.Host
             }
         }
 
+        public void Config(string[] args)
+        {
+            //_outputMonitor.LogInformation($"Value {args.Skip(1).First()} set to: {args.Last()}");
+            throw new NotImplementedException();
+        }
+
         private INoiseClient CreateClient(string endpoint)
         {
             return new NoiseClient(endpoint, _outputMonitor, _peerConfiguration, new NoiseClientConfiguration
