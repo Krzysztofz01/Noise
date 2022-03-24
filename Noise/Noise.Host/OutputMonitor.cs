@@ -143,6 +143,13 @@ namespace Noise.Host
             Console.Write(content);
         }
 
+        public void WriteRaw(string content, ConsoleColor consoleColor, bool newLine = true)
+        {
+            Console.ForegroundColor = consoleColor;
+            WriteRaw(content, newLine);
+            Console.ResetColor();
+        }
+
         public void Clear()
         {
             Console.Clear();

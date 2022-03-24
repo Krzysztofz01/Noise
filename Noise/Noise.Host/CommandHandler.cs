@@ -1,4 +1,5 @@
 ﻿using Noise.Core.Abstraction;
+using Noise.Core.Client;
 using Noise.Core.Peer;
 using Noise.Host.Abstraction;
 using Noise.Host.Exceptions;
@@ -34,6 +35,7 @@ namespace Noise.Host
             if (selectedPeer is null)
             {
                 _outputMonitor.WriteRaw(_defaultPrompt, false);
+                return;
             }
 
             var peerName = selectedPeer.Alias != "Anonymous"
@@ -59,28 +61,98 @@ namespace Noise.Host
                 case "SELECT": ExecuteSelect(args); return;
                 case "RESET": ExecuteReset(); return;
                 case "SEND": await ExecuteSend(args, cancellationTokenSource); return;
+                case ":": await ExecuteSend(args, cancellationTokenSource); return;
                 case "ALIAS": ExecuteAlias(args); return;
                 case "INSERT": ExecuteInsert(args); return;
                 case "HELP": ExecuteHelp(); return;
-                case "SIGN": ExecuteSign(cancellationTokenSource); return;
+                case "SIGN": await ExecuteSign(args, cancellationTokenSource); return;
 
-                default: throw new InvalidOperationException("Invalid command.");
+                default: throw new CommandHandlerException("Invalid command. Use the HELP command for further information.");
             }
         }
 
-        private void ExecuteSign(CancellationTokenSource cts)
+        private INoiseClient CreateClient(string endpoint)
         {
-            throw new NotImplementedException();
+            return new NoiseClient(endpoint, _outputMonitor, _peerConfiguration, new NoiseClientConfiguration
+            {
+                VerboseMode = _peerConfiguration.VerboseMode
+            });
         }
 
-        private Task ExecuteSend(string[] args, CancellationTokenSource cts)
+        private async Task ExecuteSign(string[] args, CancellationTokenSource cts)
         {
-            throw new NotImplementedException();
+            const string usage = "Usage: SIGN [overrite]";
+
+            try
+            {
+                if (selectedPeer is null)
+                    throw new CommandHandlerException("No peer selected. Use the SELECT command or check all commands using HELP.");
+
+                bool overrite = args.Any(a => a.ToLower() == "overrite");
+
+                if (selectedPeer.SendingSignature is not null && !overrite)
+                    throw new CommandHandlerException($"This peer has a signature assigned.{Environment.NewLine}{usage}");
+
+                foreach (var endpoint in _peerConfiguration.GetEndpoints())
+                {
+                    using var client = CreateClient(endpoint);
+                    await client.SendSignature(selectedPeer.PublicKey, cts.Token);
+                }
+            }
+            catch (Exception ex)
+            {
+                throw new CommandHandlerException(ex.Message);
+            }
+        }
+
+        private async Task ExecuteSend(string[] args, CancellationTokenSource cts)
+        {
+            const string usage = "Usage: SEND (or : for short) [message]";
+
+            try
+            {
+                if (args.Length != 1)
+                    throw new CommandHandlerException(usage);
+
+                if (selectedPeer is null)
+                    throw new CommandHandlerException("No peer selected. Use the SELECT command or check all commands using HELP.");
+
+                var message = args.Single();
+
+                foreach (var endpoint in _peerConfiguration.GetEndpoints())
+                {
+                    using var client = CreateClient(endpoint);
+                    await client.SendMessage(selectedPeer.PublicKey, message, cts.Token);
+                }
+
+            }
+            catch (Exception ex)
+            {
+                throw new CommandHandlerException(ex.Message);
+            }
         }
 
         private void ExecuteList(string[] args)
         {
-            throw new NotImplementedException();
+            const string usage = "Usage: LIST [full-public-key]";
+
+            try
+            {
+                bool fullPublicKey = args.Any(a => a.ToLower() == "full-public-key");
+
+                foreach (var peer in _peerConfiguration.GetPeers())
+                {
+                    string publicKey = fullPublicKey ? peer.PublicKey : peer.PublicKey[.._publicKeyStripLength];
+                    _outputMonitor.WriteRaw($"[{peer.Identifier}] {peer.Alias} - {publicKey}", true);
+                }
+
+                _outputMonitor.LogInformation($"You can optionaly print the full public key.{Environment.NewLine}{usage}");
+
+            }
+            catch (Exception ex)
+            {
+                throw new CommandHandlerException(ex.Message);
+            }
         }
 
         private void ExecuteReset()
@@ -99,7 +171,7 @@ namespace Noise.Host
                 if (args.Length != 1)
                     throw new CommandHandlerException(usage);
 
-                var ordinalNumber = Convert.ToInt32(args.First());
+                var ordinalNumber = Convert.ToInt32(args.Single());
 
                 selectedPeer = _peerConfiguration.GetPeerByOrdinalNumberIdentifier(ordinalNumber);
 
@@ -172,23 +244,23 @@ namespace Noise.Host
 
         private void ExecuteHelp()
         {
-            _outputMonitor.WriteRaw(Title.asciiTitle, false);
+            ((OutputMonitor)_outputMonitor).WriteRaw(Title.asciiTitle, ConsoleColor.DarkGreen, false);
 
-            _outputMonitor.WriteRaw($"{Environment.NewLine}v0.0.1");
-            _outputMonitor.WriteRaw("https://github.com/Krzysztofz01/Noise");
+            ((OutputMonitor)_outputMonitor).WriteRaw($"{Environment.NewLine}v0.0.1", ConsoleColor.Green);
+            ((OutputMonitor)_outputMonitor).WriteRaw("https://github.com/Krzysztofz01/Noise", ConsoleColor.Green);
 
-            _outputMonitor.WriteRaw($"{Environment.NewLine}Available commands:");
+            ((OutputMonitor)_outputMonitor).WriteRaw($"{Environment.NewLine}Available commands:", ConsoleColor.DarkYellow);
 
-            _outputMonitor.WriteRaw("EXIT - Close connections, save local data and exit.");
-            _outputMonitor.WriteRaw("CLEAR - Clear the screen.");
-            _outputMonitor.WriteRaw("LIST - List available peer keys, aliases or endpoints.");
-            _outputMonitor.WriteRaw("SELECT - Select a peer to perform interactions.");
-            _outputMonitor.WriteRaw("RESET - Reset selected peer.");
-            _outputMonitor.WriteRaw("SEND - Send message to selected peer.");
-            _outputMonitor.WriteRaw("SIGN - Send signature to selected peer.");
-            _outputMonitor.WriteRaw("ALIAS - Set alias to certain peer.");
-            _outputMonitor.WriteRaw("INSERT - Insert new peer key and optional alias or a endpoint.");
-            _outputMonitor.WriteRaw("HELP - Show available commands.");
+            ((OutputMonitor)_outputMonitor).WriteRaw("EXIT - Close connections, save local data and exit.", ConsoleColor.Yellow);
+            ((OutputMonitor)_outputMonitor).WriteRaw("CLEAR - Clear the screen.", ConsoleColor.Yellow);
+            ((OutputMonitor)_outputMonitor).WriteRaw("LIST - List available peer keys, aliases or endpoints.", ConsoleColor.Yellow);
+            ((OutputMonitor)_outputMonitor).WriteRaw("SELECT - Select a peer to perform interactions.", ConsoleColor.Yellow);
+            ((OutputMonitor)_outputMonitor).WriteRaw("RESET - Reset selected peer.", ConsoleColor.Yellow);
+            ((OutputMonitor)_outputMonitor).WriteRaw("SEND(:) - Send message to selected peer.", ConsoleColor.Yellow);
+            ((OutputMonitor)_outputMonitor).WriteRaw("SIGN - Send signature to selected peer.", ConsoleColor.Yellow);
+            ((OutputMonitor)_outputMonitor).WriteRaw("ALIAS - Set alias to certain peer.", ConsoleColor.Yellow);
+            ((OutputMonitor)_outputMonitor).WriteRaw("INSERT - Insert new peer key and optional alias or a endpoint.", ConsoleColor.Yellow);
+            ((OutputMonitor)_outputMonitor).WriteRaw("HELP - Show available commands.", ConsoleColor.Yellow);
         }
 
         private void ExecuteClear()
@@ -198,6 +270,7 @@ namespace Noise.Host
 
         private void ExecuteExit(CancellationTokenSource cancellationTokenSource)
         {
+            _outputMonitor.LogInformation("Closing the Noise peer host...");
             cancellationTokenSource.Cancel();
         }
     }

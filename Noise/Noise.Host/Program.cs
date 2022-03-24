@@ -1,5 +1,6 @@
 ﻿using Noise.Core.Abstraction;
 using Noise.Core.Exceptions;
+using Noise.Core.Extensions;
 using Noise.Core.File;
 using Noise.Core.Peer;
 using Noise.Core.Server;
@@ -15,6 +16,7 @@ namespace Noise.Host
     {
         private const int SUCCESS = 0;
         private const int FAILURE = 1;
+        private const int _timeOffsetMs = 1500;
 
         public static IOutputMonitor OutputMonitor;
         public static ICommandHandler CommandHandler;
@@ -29,8 +31,12 @@ namespace Noise.Host
                 var cts = new CancellationTokenSource();
 
                 // Server
-                using INoiseServer server = new NoiseServer(OutputMonitor, PeerConfiguration);
+                using INoiseServer server = new NoiseServer(OutputMonitor, PeerConfiguration, GetNoiseServerConfiguration());
                 _ = Task.Run(async () => await server.StartAsync(cts.Token));
+
+                ((OutputMonitor)OutputMonitor).WriteRaw("Spread the noise...", ConsoleColor.Yellow);
+                OutputMonitor.LogInformation("The Noise peer host started.");
+                Thread.Sleep(_timeOffsetMs);
 
                 // Program loop
                 while (!cts.Token.IsCancellationRequested)
@@ -38,24 +44,26 @@ namespace Noise.Host
                     try
                     {
                         CommandHandler.Prefix();
-                        await CommandHandler.Execute(Console.ReadLine(), cts);
+
+                        string input = Console.ReadLine();
+                        if(!input.IsEmpty()) await CommandHandler.Execute(input, cts);
                     }
                     catch (CommandHandlerException ex)
                     {
-                        OutputMonitor.LogError(ex);
+                        OutputMonitor.LogError($"{Environment.NewLine}{ex.Message}");
                     }
                     catch (Exception ex)
                     {
-                        OutputMonitor.LogError("Unexpected failure.");
+                        OutputMonitor.LogError($"{Environment.NewLine}Unexpected failure.", ex);
                         cts.Cancel();
                     }
                 }
 
                 server.Stop();
-                Thread.Sleep(1500);
+                Thread.Sleep(_timeOffsetMs);
 
                 await FileHandler.SavePeerConfigurationCipher(PeerConfiguration);
-                Thread.Sleep(1500);
+                Thread.Sleep(_timeOffsetMs);
 
                 return SUCCESS;
             }
@@ -70,10 +78,11 @@ namespace Noise.Host
         private async static Task InitializeServices()
         {
             OutputMonitor = new OutputMonitor();
-            CommandHandler = new CommandHandler(OutputMonitor);
-
+            
             string peerPassword = ConsoleUtility.ReadSecret("Peer password: ");
             PeerConfiguration = await GetPeerConfiguration(peerPassword);
+
+            CommandHandler = new CommandHandler(OutputMonitor, PeerConfiguration);
         }
 
         private async static Task<PeerConfiguration> GetPeerConfiguration(string peerPassword)
@@ -100,6 +109,14 @@ namespace Noise.Host
                 OutputMonitor.LogError(ex);
                 throw;
             }
+        }
+
+        private static NoiseServerConfiguration GetNoiseServerConfiguration()
+        {
+            return new NoiseServerConfiguration
+            {
+                VerboseMode = PeerConfiguration.VerboseMode
+            };
         }
     }
 }
