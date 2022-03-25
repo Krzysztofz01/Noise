@@ -112,7 +112,7 @@ namespace Noise.Host
         public void WriteOutgoingMessage(string message)
         {
             Console.ForegroundColor = _messageColor;
-            Console.WriteLine("(@You): {1}//127.0.0.1",
+            Console.WriteLine("(@You): {0}//127.0.0.1",
                 message);
             Console.ResetColor();
         }

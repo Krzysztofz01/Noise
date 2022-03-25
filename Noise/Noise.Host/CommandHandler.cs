@@ -42,7 +42,7 @@ namespace Noise.Host
                 ? selectedPeer.Alias
                 : selectedPeer.PublicKey[.._publicKeyStripLength];
 
-            _outputMonitor.WriteRaw(peerName, false);
+            _outputMonitor.WriteRaw($"({peerName}) {_defaultPrompt}", false);
         }
 
         public async Task Execute(string command, CancellationTokenSource cancellationTokenSource)
