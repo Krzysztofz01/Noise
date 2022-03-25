@@ -62,6 +62,7 @@ namespace Noise.Host
                 case "RESET": ExecuteReset(); return;
                 case "SEND": await ExecuteSend(args, cancellationTokenSource); return;
                 case ":": await ExecuteSend(args, cancellationTokenSource); return;
+                case "PING": await ExecutePing(args, cancellationTokenSource); return;
                 case "ALIAS": ExecuteAlias(args); return;
                 case "INSERT": ExecuteInsert(args); return;
                 case "HELP": ExecuteHelp(); return;
@@ -69,6 +70,26 @@ namespace Noise.Host
                 case "INFO": ExecuteInfo(); return;
 
                 default: throw new CommandHandlerException("Invalid command. Use the HELP command for further information.");
+            }
+        }
+
+        private async Task ExecutePing(string[] args, CancellationTokenSource cts)
+        {
+            const string usage = "Usage: PING [endpoint]";
+
+            try
+            {
+                if (args.Length != 1)
+                    throw new CommandHandlerException(usage);
+
+                var endpoint = args.Single();
+
+                using var client = CreateClient(endpoint);
+                await client.SendPing(cts.Token);
+            }
+            catch (Exception ex)
+            {
+                throw new CommandHandlerException(ex.Message);
             }
         }
 
@@ -147,20 +168,39 @@ namespace Noise.Host
 
         private void ExecuteList(string[] args)
         {
-            const string usage = "Usage: LIST [full-public-key]";
+            const string usage = "Usage: LIST <peer/endpoint> [full-public-key]";
 
             try
             {
-                bool fullPublicKey = args.Any(a => a.ToLower() == "full-public-key");
+                if (args.Length != 1)
+                    throw new CommandHandlerException(usage);
 
-                foreach (var peer in _peerConfiguration.GetPeers())
+                var type = args.First().ToLower();
+                var fullPublicKey = args.Skip(1).Any(a => a.ToLower() == "full-public-key");
+
+                if (type == "peer")
                 {
-                    string publicKey = fullPublicKey ? peer.PublicKey : peer.PublicKey[.._publicKeyStripLength];
-                    _outputMonitor.WriteRaw($"[{peer.Identifier}] {peer.Alias} - {publicKey}", true);
+                    foreach (var peer in _peerConfiguration.GetPeers())
+                    {
+                        string publicKey = fullPublicKey ? peer.PublicKey : peer.PublicKey[.._publicKeyStripLength];
+                        _outputMonitor.WriteRaw($"[{peer.Identifier}] {peer.Alias} - {publicKey}", true);
+                    }
+
+                    _outputMonitor.LogInformation($"You can optionaly print the full public key.{Environment.NewLine}{usage}");
+                    return;
                 }
 
-                _outputMonitor.LogInformation($"You can optionaly print the full public key.{Environment.NewLine}{usage}");
+                if (type == "endpoint")
+                {
+                    foreach (var endpoint in _peerConfiguration.GetEndpoints())
+                    {
+                        _outputMonitor.WriteRaw(endpoint, true);
+                    }
 
+                    return;
+                }
+
+                throw new CommandHandlerException(usage);
             }
             catch (Exception ex)
             {
@@ -273,6 +313,7 @@ namespace Noise.Host
             ((OutputMonitor)_outputMonitor).WriteRaw("RESET - Reset selected peer.", ConsoleColor.Yellow);
             ((OutputMonitor)_outputMonitor).WriteRaw("SEND(:) - Send message to selected peer.", ConsoleColor.Yellow);
             ((OutputMonitor)_outputMonitor).WriteRaw("SIGN - Send signature to selected peer.", ConsoleColor.Yellow);
+            ((OutputMonitor)_outputMonitor).WriteRaw("PING - Send a ping packet to a certain endpoint.", ConsoleColor.Yellow);
             ((OutputMonitor)_outputMonitor).WriteRaw("ALIAS - Set alias to certain peer.", ConsoleColor.Yellow);
             ((OutputMonitor)_outputMonitor).WriteRaw("INSERT - Insert new peer key and optional alias or a endpoint.", ConsoleColor.Yellow);
             ((OutputMonitor)_outputMonitor).WriteRaw("HELP - Show available commands.", ConsoleColor.Yellow);
