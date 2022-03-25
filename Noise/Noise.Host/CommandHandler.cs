@@ -66,9 +66,16 @@ namespace Noise.Host
                 case "INSERT": ExecuteInsert(args); return;
                 case "HELP": ExecuteHelp(); return;
                 case "SIGN": await ExecuteSign(args, cancellationTokenSource); return;
+                case "INFO": ExecuteInfo(); return;
 
                 default: throw new CommandHandlerException("Invalid command. Use the HELP command for further information.");
             }
+        }
+
+        private void ExecuteInfo()
+        {
+            ((OutputMonitor)_outputMonitor).WriteRaw("Local peer public key:", ConsoleColor.Green);
+            ((OutputMonitor)_outputMonitor).WriteRaw(_peerConfiguration.PublicKey, ConsoleColor.Yellow);
         }
 
         public void Config(string[] args)
@@ -232,12 +239,14 @@ namespace Noise.Host
                 {
                     _peerConfiguration.InsertPeer(value);
                     _outputMonitor.LogInformation("Peer with given public key added successful.");
+                    return;
                 }
 
                 if (type == "endpoint")
                 {
                     _peerConfiguration.InsertEndpoint(value);
                     _outputMonitor.LogInformation("Given endpoint registered successful.");
+                    return;
                 }
 
                 throw new CommandHandlerException(usage);
@@ -267,6 +276,7 @@ namespace Noise.Host
             ((OutputMonitor)_outputMonitor).WriteRaw("ALIAS - Set alias to certain peer.", ConsoleColor.Yellow);
             ((OutputMonitor)_outputMonitor).WriteRaw("INSERT - Insert new peer key and optional alias or a endpoint.", ConsoleColor.Yellow);
             ((OutputMonitor)_outputMonitor).WriteRaw("HELP - Show available commands.", ConsoleColor.Yellow);
+            ((OutputMonitor)_outputMonitor).WriteRaw("INFO - Print information about local peer.", ConsoleColor.Yellow);
         }
 
         private void ExecuteClear()
