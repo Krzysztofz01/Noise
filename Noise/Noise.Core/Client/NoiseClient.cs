@@ -96,8 +96,6 @@ namespace Noise.Core.Client
                     _peerConfiguration.PrivateKey,
                     certification);
 
-                _peerConfiguration.GetPeerByPublicKey(receiverPublicKey).SetSendingSignature(receiverIdentityProve);
-
                 var bufferStream = PacketBufferStreamBuilder
                     .Create()
                     .InsertPacket(keyPacket)
@@ -108,6 +106,8 @@ namespace Noise.Core.Client
 
                 Connect();
                 await SendAsync(bufferStream, cancellationToken);
+
+                _peerConfiguration.GetPeerByPublicKey(receiverPublicKey).SetSendingSignature(receiverIdentityProve);
             }
             catch (PeerDataException ex)
             {
