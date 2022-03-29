@@ -54,6 +54,11 @@ namespace Noise.Core.Client
                 var packetHandlingService = new PacketHandlingService();
 
                 var signature = _peerConfiguration.GetPeerByPublicKey(receiverPublicKey).SendingSignature;
+                if (signature is null)
+                {
+                    _outputMonitor.LogWarning("The target peer has not provided any certification. Unable to send the message.");
+                    return;
+                }
 
                 var (keyPacket, messagePacket) = packetHandlingService.CreateMessagePackets(signature, receiverPublicKey, message);
 
