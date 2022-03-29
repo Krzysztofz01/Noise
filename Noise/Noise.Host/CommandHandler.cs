@@ -97,12 +97,36 @@ namespace Noise.Host
         {
             ((OutputMonitor)_outputMonitor).WriteRaw("Local peer public key:", ConsoleColor.Green);
             ((OutputMonitor)_outputMonitor).WriteRaw(_peerConfiguration.PublicKey, ConsoleColor.Yellow);
+
+            _outputMonitor.WriteRaw(string.Empty);
+            ((OutputMonitor)_outputMonitor).WriteRaw("Configuration:", ConsoleColor.Green);
+            foreach (var option in _peerConfiguration.GetConfiguration())
+            {
+                ((OutputMonitor)_outputMonitor).WriteRaw($"{option.Key}: {option.Value}", ConsoleColor.Yellow);
+            }
         }
 
         public void Config(string[] args)
         {
-            //_outputMonitor.LogInformation($"Value {args.Skip(1).First()} set to: {args.Last()}");
-            throw new NotImplementedException();
+            const string usage = "Usage: --config [option-name] [option-value]";
+
+            try
+            {
+                var property = args.Skip(1).SkipLast(1).SingleOrDefault() ??
+                    throw new CommandHandlerException(usage);
+
+                var value = args.Skip(2).SingleOrDefault() ??
+                    throw new CommandHandlerException(usage);
+
+                if (!_peerConfiguration.ApplyConfiguration(property, value))
+                    throw new CommandHandlerException($"Failed to apply: {value} to: {property} option.");
+
+                ((OutputMonitor)_outputMonitor).WriteRaw($"Successful applied: {value} to: {property} option.", ConsoleColor.Green);
+            }
+            catch (Exception ex)
+            {
+                throw new CommandHandlerException(ex.Message);
+            }
         }
 
         private INoiseClient CreateClient(string endpoint)

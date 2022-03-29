@@ -26,11 +26,9 @@ namespace Noise.Host
         {
             try
             {
-                // Initialization
                 await InitializeServices();
                 var cts = new CancellationTokenSource();
 
-                // Apply config if launched with config flag
                 if (args.FirstIs("--config"))
                 {
                     try
@@ -40,6 +38,8 @@ namespace Noise.Host
                         CommandHandler.Config(args);
 
                         await FileHandler.SavePeerConfigurationCipher(PeerConfiguration);
+                  
+                        return SUCCESS;
 
                     }
                     catch (CommandHandlerException ex)
@@ -53,10 +53,8 @@ namespace Noise.Host
 
                         return FAILURE;
                     }
-                    return SUCCESS;
                 }
 
-                // Server
                 using INoiseServer server = new NoiseServer(OutputMonitor, PeerConfiguration, GetNoiseServerConfiguration());
                 _ = Task.Run(async () => await server.StartAsync(cts.Token));
 
@@ -64,7 +62,6 @@ namespace Noise.Host
                 OutputMonitor.LogInformation("The Noise peer host started.");
                 Thread.Sleep(_timeOffsetMs);
 
-                // Program loop
                 while (!cts.Token.IsCancellationRequested)
                 {
                     try

@@ -24,10 +24,15 @@ namespace Noise.Core.Peer
         public string PrivateKey { get; init; }
         public string PublicKey { get; init; }
         public string ConfigurationSecret { get; init; }
-        public bool VerboseMode { get; init; }
-        public bool UseTracker { get; init; }
-        public IEnumerable<string> Trackers { get; init; }
-        public string IndependentMediumCertification { get; init; }
+        
+        [Configurable]
+        public bool UseTracker { get; set; }
+        //[Configurable]
+        public IEnumerable<string> Trackers { get; set; }
+        [Configurable]
+        public bool VerboseMode { get; set; }
+        [Configurable]
+        public string IndependentMediumCertification { get; set; }
 
         [JsonConstructor]
         [Obsolete("This constructor is only for deserialization and ,,private'' usage. Use one of the methods of the PeerConfiguration.Factory class.")]
@@ -146,6 +151,43 @@ namespace Noise.Core.Peer
         public bool IsReceivingSignatureValid(string receivingSignature)
         {
             return Peers.Any(p => p.ReceivingSignature == receivingSignature);
+        }
+
+        public IDictionary<string, string> GetConfiguration()
+        {
+            return typeof(PeerConfiguration)
+                .GetProperties()
+                .Where(p => p.CustomAttributes.Any(a => a.AttributeType == typeof(ConfigurableAttribute)))
+                .ToDictionary(k => k.Name, v => (v.GetValue(this, null) is null) ? "" : v.GetValue(this, null).ToString());
+        }
+
+        public bool ApplyConfiguration(string name, string value)
+        {
+            try
+            {
+                var property = typeof(PeerConfiguration)
+                    .GetProperties()
+                    .Where(p => p.CustomAttributes.Any(a => a.AttributeType == typeof(ConfigurableAttribute)))
+                    .Single(p => p.Name.ToLower() == name.ToLower());
+
+                switch (property.PropertyType)
+                {
+                    case Type _ when property.PropertyType == typeof(bool):
+                        property.SetValue(this, bool.Parse(value)); break;
+
+                    case Type _ when property.PropertyType == typeof(string):
+                        property.SetValue(this, value); break;
+
+                    default:
+                        throw new InvalidOperationException();
+                }
+
+                return true;
+            }
+            catch (Exception)
+            {
+                return false;
+            }
         }
 
         public string Serialize()
