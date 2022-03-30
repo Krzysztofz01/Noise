@@ -63,6 +63,7 @@ namespace Noise.Host
                 case "RESET": ExecuteReset(); return;
                 case "SEND": await ExecuteSend(args, cancellationTokenSource); return;
                 case ":": await ExecuteSend(args, cancellationTokenSource); return;
+                case "BLEACH": ExecuteBleach(); return;
                 case "PING": await ExecutePing(args, cancellationTokenSource); return;
                 case "ALIAS": ExecuteAlias(args); return;
                 case "INSERT": ExecuteInsert(args); return;
@@ -71,6 +72,24 @@ namespace Noise.Host
                 case "INFO": ExecuteInfo(); return;
 
                 default: throw new CommandHandlerException("Invalid command. Use the HELP command for further information.");
+            }
+        }
+
+        private void ExecuteBleach()
+        {
+            try
+            {
+                if (selectedPeer is null)
+                    throw new CommandHandlerException("No peer selected. Use the SELECT command or check all commands using HELP.");
+
+                selectedPeer.SetReceivingSignature(null);
+                selectedPeer.SetSendingSignature(null);
+
+                ((OutputMonitor)_outputMonitor).WriteRaw("Peer bleached successful.", ConsoleColor.Green);
+            }
+            catch (Exception ex)
+            {
+                throw new CommandHandlerException(ex.Message);
             }
         }
 
@@ -339,6 +358,7 @@ namespace Noise.Host
             ((OutputMonitor)_outputMonitor).WriteRaw("RESET - Reset selected peer.", ConsoleColor.Yellow);
             ((OutputMonitor)_outputMonitor).WriteRaw("SEND(:) - Send message to selected peer.", ConsoleColor.Yellow);
             ((OutputMonitor)_outputMonitor).WriteRaw("SIGN - Send signature to selected peer.", ConsoleColor.Yellow);
+            ((OutputMonitor)_outputMonitor).WriteRaw("BLEACH - Reset all signatures related to selected peer.", ConsoleColor.Yellow);
             ((OutputMonitor)_outputMonitor).WriteRaw("PING - Send a ping packet to a certain endpoint.", ConsoleColor.Yellow);
             ((OutputMonitor)_outputMonitor).WriteRaw("ALIAS - Set alias to certain peer.", ConsoleColor.Yellow);
             ((OutputMonitor)_outputMonitor).WriteRaw("INSERT - Insert new peer key and optional alias or a endpoint.", ConsoleColor.Yellow);
