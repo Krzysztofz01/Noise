@@ -10,12 +10,13 @@ namespace Noise.Core.Peer
 
         public string PublicKey { get; init; }
         public int Identifier { get; init; }
-        public string ReceivingSignature { get; init; }
 
+        public string ReceivingSignature { get; set; }
         public string Alias { get; set; }
         public string SendingSignature { get; set; }
 
         public void SetAlias(string alias) => Alias = alias;
+        public void SetReceivingSignature(string receivingSignature) => ReceivingSignature = receivingSignature;
         public void SetSendingSignature(string sendingSignature) => SendingSignature = sendingSignature;
 
         [JsonConstructor]

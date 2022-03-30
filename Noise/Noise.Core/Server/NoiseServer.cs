@@ -102,7 +102,10 @@ namespace Noise.Core.Server
                 }
 
                 LogVerbose($"Signature received successful.");
-                _peerConfiguration.InsertPeer(senderPublicKey, signature);
+
+                _peerConfiguration.GetPeerByPublicKey(senderPublicKey).SetReceivingSignature(signature);
+
+                LogVerbose("Received signature applied successful.");
             }
             catch (PacketRejectedException ex)
             {
@@ -114,7 +117,7 @@ namespace Noise.Core.Server
             }
             catch (Exception ex)
             {
-                LogVerbose($"Unexpected exception while receiving message packets. {ex.Message}");
+                LogVerbose($"Unexpected exception while receiving signature packets. {ex.Message}");
             }
         }
 
