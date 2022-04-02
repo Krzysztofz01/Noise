@@ -47,5 +47,22 @@ namespace Noise.Core.File
                 throw;
             }
         }
+
+        public static async Task<bool> SavePeerCard(PeerConfiguration peerConfiguration)
+        {
+            try
+            {
+                var fileName = $"{ DateTime.Now.ToString("yyyyMMddHHmmss") }.noisepeer";
+                var filePath = Path.Combine(Directory.GetCurrentDirectory(), fileName);
+
+                await System.IO.File.WriteAllTextAsync(filePath, peerConfiguration.PublicKey);
+
+                return true;
+            }
+            catch (Exception)
+            {
+                return false;
+            }
+        }
     }
 }

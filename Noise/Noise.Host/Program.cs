@@ -29,6 +29,30 @@ namespace Noise.Host
                 await InitializeServices();
                 var cts = new CancellationTokenSource();
 
+                if (args.FirstIs("--export"))
+                {
+                    try
+                    {
+                        OutputMonitor.LogInformation("The Noise peer host started in card export mode.");
+
+                        if (!await FileHandler.SavePeerCard(PeerConfiguration))
+                            throw new CommandHandlerException("Failed to export the peer card.");
+
+                        return SUCCESS;
+                    }
+                    catch (CommandHandlerException ex)
+                    {
+                        OutputMonitor.LogError($"{Environment.NewLine}{ex.Message}");
+                    }
+                    catch (Exception ex)
+                    {
+                        OutputMonitor.LogError($"{Environment.NewLine}Unexpected failure.", ex);
+                        cts.Cancel();
+
+                        return FAILURE;
+                    }
+                }
+
                 if (args.FirstIs("--config"))
                 {
                     try
