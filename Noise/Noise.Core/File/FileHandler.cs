@@ -64,5 +64,20 @@ namespace Noise.Core.File
                 return false;
             }
         }
+
+        public static string GetPeerCardPublicKey(string filePath)
+        {
+            try
+            {
+                if (!System.IO.File.Exists(filePath))
+                    throw new FileNotFoundException("Peer card file not found.");
+
+                return System.IO.File.ReadAllText(filePath);
+            }
+            catch (Exception)
+            {
+                throw;
+            }
+        }
     }
 }
