@@ -6,6 +6,7 @@ using Noise.Core.Peer;
 using Noise.Core.Server;
 using Noise.Host.Abstraction;
 using Noise.Host.Exceptions;
+using Noise.Host.Modes;
 using System;
 using System.Threading;
 using System.Threading.Tasks;
@@ -29,30 +30,10 @@ namespace Noise.Host
                 await InitializeServices();
                 var cts = new CancellationTokenSource();
 
-                if (args.FirstIs("--config"))
+                if (args.Length != 0)
                 {
-                    try
-                    {
-                        OutputMonitor.LogInformation("The Noise peer host started in configuration mode.");
-
-                        CommandHandler.Config(args);
-
-                        await FileHandler.SavePeerConfigurationCipher(PeerConfiguration);
-                  
-                        return SUCCESS;
-
-                    }
-                    catch (CommandHandlerException ex)
-                    {
-                        OutputMonitor.LogError($"{Environment.NewLine}{ex.Message}");
-                    }
-                    catch (Exception ex)
-                    {
-                        OutputMonitor.LogError($"{Environment.NewLine}Unexpected failure.", ex);
-                        cts.Cancel();
-
-                        return FAILURE;
-                    }
+                    if (args.FirstIs(ConfigMode.Command)) return await new ConfigMode(OutputMonitor, PeerConfiguration, CommandHandler)
+                            .Launch(args) ? SUCCESS : FAILURE;
                 }
 
                 using INoiseServer server = new NoiseServer(OutputMonitor, PeerConfiguration, GetNoiseServerConfiguration());
