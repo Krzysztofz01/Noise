@@ -189,7 +189,7 @@ namespace Noise.Host
 
             try
             {
-                if (args.Length != 1)
+                if (args.Length == 0)
                     throw new CommandHandlerException(usage);
 
                 if (selectedPeer is null)
