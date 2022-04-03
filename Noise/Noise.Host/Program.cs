@@ -1,4 +1,3 @@
-﻿using Noise.Core.Abstraction;
 using Noise.Core.Exceptions;
 using Noise.Core.Extensions;
 using Noise.Core.File;
@@ -8,6 +7,7 @@ using Noise.Host.Abstraction;
 using Noise.Host.Exceptions;
 using Noise.Host.Modes;
 using System;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -34,6 +34,59 @@ namespace Noise.Host
                 {
                     if (args.FirstIs(ConfigMode.Command)) return await new ConfigMode(OutputMonitor, PeerConfiguration, CommandHandler)
                             .Launch(args) ? SUCCESS : FAILURE;
+                }
+              
+                if (args.FirstIs("--export"))
+                {
+                    try
+                    {
+                        OutputMonitor.LogInformation("The Noise peer host started in card export mode.");
+
+                        if (!await FileHandler.SavePeerCard(PeerConfiguration))
+                            throw new CommandHandlerException("Failed to export the peer card.");
+
+                        return SUCCESS;
+                    }
+                    catch (CommandHandlerException ex)
+                    {
+                        OutputMonitor.LogError($"{Environment.NewLine}{ex.Message}");
+                    }
+                    catch (Exception ex)
+                    {
+                        OutputMonitor.LogError($"{Environment.NewLine}Unexpected failure.", ex);
+                        cts.Cancel();
+
+                        return FAILURE;
+                    }
+                }
+
+                if (args.FirstIs("--import"))
+                {
+                    try
+                    {
+                        OutputMonitor.LogInformation("The Noise peer host started in card import mode.");
+
+                        string cardFilePath = args.Skip(1).First();
+
+                        string retrivedPublicKey = FileHandler.GetPeerCardPublicKey(cardFilePath);
+
+                        PeerConfiguration.InsertPeer(retrivedPublicKey);
+
+                        await FileHandler.SavePeerConfigurationCipher(PeerConfiguration);
+
+                        return SUCCESS;
+                    }
+                    catch (CommandHandlerException ex)
+                    {
+                        OutputMonitor.LogError($"{Environment.NewLine}{ex.Message}");
+                    }
+                    catch (Exception ex)
+                    {
+                        OutputMonitor.LogError($"{Environment.NewLine}Unexpected failure.", ex);
+                        cts.Cancel();
+
+                        return FAILURE;
+                    }
                 }
 
                 using INoiseServer server = new NoiseServer(OutputMonitor, PeerConfiguration, GetNoiseServerConfiguration());
