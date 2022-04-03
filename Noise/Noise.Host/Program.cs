@@ -1,4 +1,3 @@
-﻿using Noise.Core.Abstraction;
 using Noise.Core.Exceptions;
 using Noise.Core.Extensions;
 using Noise.Core.File;
@@ -6,6 +5,7 @@ using Noise.Core.Peer;
 using Noise.Core.Server;
 using Noise.Host.Abstraction;
 using Noise.Host.Exceptions;
+using Noise.Host.Modes;
 using System;
 using System.Linq;
 using System.Threading;
@@ -30,6 +30,12 @@ namespace Noise.Host
                 await InitializeServices();
                 var cts = new CancellationTokenSource();
 
+                if (args.Length != 0)
+                {
+                    if (args.FirstIs(ConfigMode.Command)) return await new ConfigMode(OutputMonitor, PeerConfiguration, CommandHandler)
+                            .Launch(args) ? SUCCESS : FAILURE;
+                }
+              
                 if (args.FirstIs("--export"))
                 {
                     try
@@ -69,32 +75,6 @@ namespace Noise.Host
                         await FileHandler.SavePeerConfigurationCipher(PeerConfiguration);
 
                         return SUCCESS;
-                    }
-                    catch (CommandHandlerException ex)
-                    {
-                        OutputMonitor.LogError($"{Environment.NewLine}{ex.Message}");
-                    }
-                    catch (Exception ex)
-                    {
-                        OutputMonitor.LogError($"{Environment.NewLine}Unexpected failure.", ex);
-                        cts.Cancel();
-
-                        return FAILURE;
-                    }
-                }
-
-                if (args.FirstIs("--config"))
-                {
-                    try
-                    {
-                        OutputMonitor.LogInformation("The Noise peer host started in configuration mode.");
-
-                        CommandHandler.Config(args);
-
-                        await FileHandler.SavePeerConfigurationCipher(PeerConfiguration);
-                  
-                        return SUCCESS;
-
                     }
                     catch (CommandHandlerException ex)
                     {
