@@ -39,6 +39,8 @@ namespace Noise.Host.Modes
 
                 await FileHandler.SavePeerConfigurationCipher(_peerConfiguration);
 
+                _outputMonitor.LogInformation("Noise peer successfull imported from card.");
+
                 return true;
             }
             catch (CommandHandlerException ex)
