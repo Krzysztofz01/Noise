@@ -1,4 +1,4 @@
-﻿using Noise.Core.Abstraction;
+using Noise.Core.Abstraction;
 using Noise.Core.Exceptions;
 using Noise.Core.Extensions;
 using Noise.Core.File;
@@ -6,7 +6,9 @@ using Noise.Core.Peer;
 using Noise.Core.Server;
 using Noise.Host.Abstraction;
 using Noise.Host.Exceptions;
+using Noise.Host.Modes;
 using System;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -29,30 +31,16 @@ namespace Noise.Host
                 await InitializeServices();
                 var cts = new CancellationTokenSource();
 
-                if (args.FirstIs("--config"))
+                if (args.Length != 0)
                 {
-                    try
-                    {
-                        OutputMonitor.LogInformation("The Noise peer host started in configuration mode.");
+                    if (args.FirstIs(ConfigMode.Command)) return await new ConfigMode(OutputMonitor, PeerConfiguration, CommandHandler)
+                            .Launch(args) ? SUCCESS : FAILURE;
 
-                        CommandHandler.Config(args);
+                    if (args.FirstIs(ImportMode.Command)) return await new ImportMode(OutputMonitor, PeerConfiguration)
+                            .Launch(args) ? SUCCESS : FAILURE;
 
-                        await FileHandler.SavePeerConfigurationCipher(PeerConfiguration);
-                  
-                        return SUCCESS;
-
-                    }
-                    catch (CommandHandlerException ex)
-                    {
-                        OutputMonitor.LogError($"{Environment.NewLine}{ex.Message}");
-                    }
-                    catch (Exception ex)
-                    {
-                        OutputMonitor.LogError($"{Environment.NewLine}Unexpected failure.", ex);
-                        cts.Cancel();
-
-                        return FAILURE;
-                    }
+                    if (args.FirstIs(ExportMode.Command)) return await new ExportMode(OutputMonitor, PeerConfiguration)
+                            .Launch(args) ? SUCCESS : FAILURE;
                 }
 
                 using INoiseServer server = new NoiseServer(OutputMonitor, PeerConfiguration, GetNoiseServerConfiguration());

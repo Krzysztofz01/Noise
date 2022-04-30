@@ -54,6 +54,9 @@ namespace Noise.Core.Peer
 
         public void InsertPeer(string publicKey, string receivingSignature = null, string alias = null)
         {
+            if (publicKey == PublicKey)
+                throw new InvalidOperationException("Can not insert own public key.");
+  
             if (_remotePeers.Any(p => p.PublicKey == publicKey))
                 throw new InvalidOperationException("Given public key already exists.");
 
