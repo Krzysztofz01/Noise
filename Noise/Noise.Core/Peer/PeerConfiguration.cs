@@ -76,6 +76,9 @@ namespace Noise.Core.Peer
             if (publicKey.IsEmpty())
                 throw new ArgumentNullException(nameof(publicKey), "Invalid public key for peer.");
 
+            if (publicKey == PublicKey)
+                throw new InvalidOperationException("Can not insert own public key.");
+
             if (alias.IsEmpty())
                 throw new ArgumentNullException(nameof(alias), "Invalid alias value for peer.");
 

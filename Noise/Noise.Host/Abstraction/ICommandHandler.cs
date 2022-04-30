@@ -3,7 +3,7 @@ using System.Threading.Tasks;
 
 namespace Noise.Host.Abstraction
 {
-    public interface ICommandHandler
+    internal interface ICommandHandler
     {
         void Prefix();
         Task Execute(string command, CancellationTokenSource cancellationTokenSource);
