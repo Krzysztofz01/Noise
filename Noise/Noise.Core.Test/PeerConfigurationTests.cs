@@ -19,7 +19,7 @@ namespace Noise.Core.Test
 
             var deserializedPc = PeerConfiguration.Factory.Deserialize(serializedPc);
 
-            Assert.Equal(pc.PrivateKey, deserializedPc.PrivateKey);
+            Assert.Equal(pc.Secrets.PrivateKey, deserializedPc.Secrets.PrivateKey);
         }
 
         [Fact]
@@ -65,7 +65,7 @@ namespace Noise.Core.Test
             foreach (var _ in Enumerable.Range(0, 2))
             {
                 pc.InsertPeer(
-                    MockUpPeerConfiguration().PublicKey,
+                    MockUpPeerConfiguration().Secrets.PublicKey,
                     MockUpPeerSignature());
             }
 
@@ -79,7 +79,7 @@ namespace Noise.Core.Test
         {
             var pc = MockUpPeerConfiguration();
 
-            var key = MockUpPeerConfiguration().PublicKey;
+            var key = MockUpPeerConfiguration().Secrets.PublicKey;
             var signature = MockUpPeerSignature();
             var alias = "Hello World!";
 
@@ -96,7 +96,7 @@ namespace Noise.Core.Test
         {
             var pc = MockUpPeerConfiguration();
 
-            var key = MockUpPeerConfiguration().PublicKey;
+            var key = MockUpPeerConfiguration().Secrets.PublicKey;
             var signature = MockUpPeerSignature();
             var alias = "Hello World!";
 
@@ -119,7 +119,7 @@ namespace Noise.Core.Test
         {
             var pc = MockUpPeerConfiguration();
 
-            var key = MockUpPeerConfiguration().PublicKey;
+            var key = MockUpPeerConfiguration().Secrets.PublicKey;
             var signature = MockUpPeerSignature();
 
             pc.InsertPeer(key, signature);
@@ -137,7 +137,7 @@ namespace Noise.Core.Test
         {
             var pc = MockUpPeerConfiguration();
 
-            var key = MockUpPeerConfiguration().PublicKey;
+            var key = MockUpPeerConfiguration().Secrets.PublicKey;
             var alias = "Hello World!";
 
             Assert.Throws<ArgumentNullException>(() =>
@@ -168,10 +168,10 @@ namespace Noise.Core.Test
             var knownPeer = MockUpPeerConfiguration();
             var unknownPeer = MockUpPeerConfiguration();
 
-            pc.InsertPeer(knownPeer.PublicKey, MockUpPeerSignature());
+            pc.InsertPeer(knownPeer.Secrets.PublicKey, MockUpPeerSignature());
 
-            Assert.True(pc.IsPeerKnown(knownPeer.PublicKey));
-            Assert.False(pc.IsPeerKnown(unknownPeer.PublicKey));
+            Assert.True(pc.IsPeerKnown(knownPeer.Secrets.PublicKey));
+            Assert.False(pc.IsPeerKnown(unknownPeer.Secrets.PublicKey));
         }
 
         [Fact]
@@ -179,11 +179,11 @@ namespace Noise.Core.Test
         {
             var pc = MockUpPeerConfiguration();
 
-            var firstKey = MockUpPeerConfiguration().PublicKey;
+            var firstKey = MockUpPeerConfiguration().Secrets.PublicKey;
             var firstSignature = MockUpPeerSignature();
             pc.InsertPeer(firstKey, firstSignature);
 
-            var secondKey = MockUpPeerConfiguration().PublicKey;
+            var secondKey = MockUpPeerConfiguration().Secrets.PublicKey;
             var secondSignature = MockUpPeerSignature();
             pc.InsertPeer(secondKey, secondSignature);
 
@@ -199,7 +199,7 @@ namespace Noise.Core.Test
         {
             var pc = MockUpPeerConfiguration();
 
-            var knownKey = MockUpPeerConfiguration().PublicKey;
+            var knownKey = MockUpPeerConfiguration().Secrets.PublicKey;
             var knownSignature = MockUpPeerSignature();
             pc.InsertPeer(knownKey, knownSignature);
 
@@ -213,7 +213,7 @@ namespace Noise.Core.Test
         {
             var pc = MockUpPeerConfiguration();
 
-            var firstKey = MockUpPeerConfiguration().PublicKey;
+            var firstKey = MockUpPeerConfiguration().Secrets.PublicKey;
             var firstSignature = MockUpPeerSignature();
             pc.InsertPeer(firstKey, firstSignature);
 
@@ -231,11 +231,11 @@ namespace Noise.Core.Test
         {
             var pc = MockUpPeerConfiguration();
 
-            var firstKey = MockUpPeerConfiguration().PublicKey;
+            var firstKey = MockUpPeerConfiguration().Secrets.PublicKey;
             var firstSignature = MockUpPeerSignature();
             pc.InsertPeer(firstKey, firstSignature);
 
-            var secondKey = MockUpPeerConfiguration().PublicKey;
+            var secondKey = MockUpPeerConfiguration().Secrets.PublicKey;
             pc.InsertPeer(secondKey);
 
             Assert.True(pc.HasPeerAssignedSignature(firstKey));
@@ -253,7 +253,7 @@ namespace Noise.Core.Test
             var decryptedPeerConfiguration = PeerEncryption.DecryptPeerConfiguration(encryptedPeerConfiguration, secret);
 
             Assert.NotNull(decryptedPeerConfiguration);
-            Assert.Equal(peer.PrivateKey, decryptedPeerConfiguration.PrivateKey);
+            Assert.Equal(peer.Secrets.PrivateKey, decryptedPeerConfiguration.Secrets.PrivateKey);
         }
 
         [Fact]
@@ -268,6 +268,50 @@ namespace Noise.Core.Test
             var decryptedPeerConfiguration = PeerEncryption.DecryptPeerConfiguration(encryptedPeerConfiguration, wrongSecret);
 
             Assert.Null(decryptedPeerConfiguration);
+        }
+
+        [Fact]
+        public void PeerShouldSkipDisconnectedEndpoints()
+        {
+            var pc = MockUpPeerConfiguration();
+
+            var firstEndpoint = "127.0.0.1";
+            pc.InsertEndpoint(firstEndpoint);
+
+            var secondEndpoint = "127.0.0.2";
+            pc.InsertEndpoint(secondEndpoint);
+
+            pc.SetEndpointAsDisconnected(firstEndpoint);
+
+            var expectedCount = 1;
+
+            Assert.Equal(expectedCount, pc.GetEndpoints(true).Count());
+        }
+
+        [Fact]
+        public void PeerShouldApplyPreference()
+        {
+            var pc = MockUpPeerConfiguration();
+
+            var preferenceName = "verbosemode";
+            var preferenceValue = "true";
+
+            Assert.False(pc.Preferences.VerboseMode);
+
+            Assert.True(pc.ApplyPreference(preferenceName, preferenceValue));
+
+            Assert.True(pc.Preferences.VerboseMode);
+        }
+
+        [Fact]
+        public void PeerShouldHandleWhenApplyingInvalidPreference()
+        {
+            var pc = MockUpPeerConfiguration();
+
+            var preferenceName = "invalid_preference";
+            var preferenceValue = "12true_helloworld";
+
+            Assert.False(pc.ApplyPreference(preferenceName, preferenceValue));
         }
 
         public PeerConfiguration MockUpPeerConfiguration()

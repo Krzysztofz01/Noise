@@ -249,16 +249,16 @@ namespace Noise.Core.Test
             var phs = new PacketHandlingService();
 
             // Signature exchange: peer1->peer2
-            var (keyPacket, signaturePacket, receiverIdentityProve) = phs.CreateSignaturePacket(peer2.PublicKey, peer1.PublicKey, peer1.PrivateKey);
+            var (keyPacket, signaturePacket, receiverIdentityProve) = phs.CreateSignaturePacket(peer2.Secrets.PublicKey, peer1.Secrets.PublicKey, peer1.Secrets.PrivateKey);
 
             Assert.NotNull(keyPacket);
             Assert.NotNull(signaturePacket);
             Assert.NotNull(receiverIdentityProve);
 
-            var (signature, senderPublicKey, certification) = phs.ReceiveIdentityProve(keyPacket.GetBytes(), signaturePacket.GetBytes(), peer2.PrivateKey);
+            var (signature, senderPublicKey, certification) = phs.ReceiveIdentityProve(keyPacket.GetBytes(), signaturePacket.GetBytes(), peer2.Secrets.PrivateKey);
 
             Assert.Equal(receiverIdentityProve, signature);
-            Assert.Equal(peer1.PublicKey, senderPublicKey);
+            Assert.Equal(peer1.Secrets.PublicKey, senderPublicKey);
             Assert.Equal(string.Empty, certification);
         }
 
@@ -274,7 +274,7 @@ namespace Noise.Core.Test
             var phs = new PacketHandlingService();
 
             // Signature exchange: peer1(as peer2)->peer3
-            var (keyPacket, signaturePacket, receiverIdentityProve) = phs.CreateSignaturePacket(peer3.PublicKey, peer2.PublicKey, peer1.PrivateKey);
+            var (keyPacket, signaturePacket, receiverIdentityProve) = phs.CreateSignaturePacket(peer3.Secrets.PublicKey, peer2.Secrets.PublicKey, peer1.Secrets.PrivateKey);
 
             Assert.NotNull(keyPacket);
             Assert.NotNull(signaturePacket);
@@ -282,7 +282,7 @@ namespace Noise.Core.Test
 
             Assert.Throws<PacketRejectedException>(() =>
             {
-                _ = phs.ReceiveIdentityProve(keyPacket.GetBytes(), signaturePacket.GetBytes(), peer3.PrivateKey);
+                _ = phs.ReceiveIdentityProve(keyPacket.GetBytes(), signaturePacket.GetBytes(), peer3.Secrets.PrivateKey);
             });
         }
 
@@ -298,20 +298,20 @@ namespace Noise.Core.Test
             var phs = new PacketHandlingService();
 
             // Signature exchange: peer1->peer2
-            var (signatureKeyPacket, signaturePacket, receiversSignature) = phs.CreateSignaturePacket(peer2.PublicKey, peer1.PublicKey, peer1.PrivateKey);
+            var (signatureKeyPacket, signaturePacket, receiversSignature) = phs.CreateSignaturePacket(peer2.Secrets.PublicKey, peer1.Secrets.PublicKey, peer1.Secrets.PrivateKey);
             peer1SignatureCreatedForPeer2 = receiversSignature;
             
-            var (signature, senderPublicKey, certification) = phs.ReceiveIdentityProve(signatureKeyPacket.GetBytes(), signaturePacket.GetBytes(), peer2.PrivateKey);
+            var (signature, senderPublicKey, certification) = phs.ReceiveIdentityProve(signatureKeyPacket.GetBytes(), signaturePacket.GetBytes(), peer2.Secrets.PrivateKey);
             peer2SignautreReceivedFromPeer1 = signature;
 
             // Message exchange: peer2->peer1
             var message = "Hello World!";
-            var (messageKeyPacket, messagePacket) = phs.CreateMessagePackets(peer2SignautreReceivedFromPeer1, peer1.PublicKey, message);
-            var (receivedSignature, receivedMessage) = phs.ReceiveMessage(messageKeyPacket.GetBytes(), messagePacket.GetBytes(), peer1.PrivateKey);
+            var (messageKeyPacket, messagePacket) = phs.CreateMessagePackets(peer2SignautreReceivedFromPeer1, peer1.Secrets.PublicKey, message);
+            var (receivedSignature, receivedMessage) = phs.ReceiveMessage(messageKeyPacket.GetBytes(), messagePacket.GetBytes(), peer1.Secrets.PrivateKey);
 
             Assert.Equal(message, receivedMessage);
             Assert.Equal(peer1SignatureCreatedForPeer2, receivedSignature);
-            Assert.Equal(peer1.PublicKey, senderPublicKey);
+            Assert.Equal(peer1.Secrets.PublicKey, senderPublicKey);
             Assert.Equal(string.Empty, certification);
         }
 
@@ -329,20 +329,20 @@ namespace Noise.Core.Test
             var phs = new PacketHandlingService();
 
             // Signature exchange: peer1->peer2
-            var (signatureKeyPacket, signaturePacket, receiversSignature) = phs.CreateSignaturePacket(peer2.PublicKey, peer1.PublicKey, peer1.PrivateKey);
+            var (signatureKeyPacket, signaturePacket, receiversSignature) = phs.CreateSignaturePacket(peer2.Secrets.PublicKey, peer1.Secrets.PublicKey, peer1.Secrets.PrivateKey);
             peer1SignatureCreatedForPeer2 = receiversSignature;
 
-            var (signature, senderPublicKey, certification) = phs.ReceiveIdentityProve(signatureKeyPacket.GetBytes(), signaturePacket.GetBytes(), peer2.PrivateKey);
+            var (signature, senderPublicKey, certification) = phs.ReceiveIdentityProve(signatureKeyPacket.GetBytes(), signaturePacket.GetBytes(), peer2.Secrets.PrivateKey);
             peer2SignautreReceivedFromPeer1 = signature;
 
             // Discovery exchange: peer2->peer1
-            var (discoveryKeyPacket, discoveryPacket) = phs.CreateDiscoveryPackets(peer2SignautreReceivedFromPeer1, peer1.PublicKey, endpoints, publicKeys);
-            var (receivedEndpoint, receivedPublicKeys, receivedSignature) = phs.ReceiveDiscoveryCollections(discoveryKeyPacket.GetBytes(), discoveryPacket.GetBytes(), peer1.PrivateKey);
+            var (discoveryKeyPacket, discoveryPacket) = phs.CreateDiscoveryPackets(peer2SignautreReceivedFromPeer1, peer1.Secrets.PublicKey, endpoints, publicKeys);
+            var (receivedEndpoint, receivedPublicKeys, receivedSignature) = phs.ReceiveDiscoveryCollections(discoveryKeyPacket.GetBytes(), discoveryPacket.GetBytes(), peer1.Secrets.PrivateKey);
             
             Assert.Equal(endpoints, receivedEndpoint);
             Assert.Equal(publicKeys, receivedPublicKeys);
             Assert.Equal(peer1SignatureCreatedForPeer2, receivedSignature);
-            Assert.Equal(peer1.PublicKey, senderPublicKey);
+            Assert.Equal(peer1.Secrets.PublicKey, senderPublicKey);
             Assert.Equal(string.Empty, certification);
         }
 
