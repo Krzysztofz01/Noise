@@ -344,9 +344,9 @@ namespace Noise.Host
 
         private void ExecuteHelp()
         {
-            ((OutputMonitor)_outputMonitor).WriteRaw(Title.asciiTitle, ConsoleColor.DarkGreen, false);
+            ((OutputMonitor)_outputMonitor).WriteRaw(Title.AsciiTitle, ConsoleColor.DarkGreen, false);
 
-            ((OutputMonitor)_outputMonitor).WriteRaw($"{Environment.NewLine}v0.0.1", ConsoleColor.Green);
+            ((OutputMonitor)_outputMonitor).WriteRaw($"{Environment.NewLine}{Title.Version}", ConsoleColor.Green);
             ((OutputMonitor)_outputMonitor).WriteRaw("https://github.com/Krzysztofz01/Noise", ConsoleColor.Green);
 
             ((OutputMonitor)_outputMonitor).WriteRaw($"{Environment.NewLine}Available commands:", ConsoleColor.DarkYellow);

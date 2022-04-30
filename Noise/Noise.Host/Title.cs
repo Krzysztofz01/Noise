@@ -2,7 +2,9 @@
 {
     public class Title
     {
-        public const string asciiTitle = @"
+        public const string Version = "v0.1.2-alpha";
+
+        public const string AsciiTitle = @"
                                      :                                   
                  L.                 t#,                 .        ,;      
                  EW:        ,ft    ;##W.   t           ;W      f#i .     
