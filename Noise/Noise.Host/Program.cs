@@ -138,7 +138,7 @@ namespace Noise.Host
         {
             return new NoiseServerConfiguration
             {
-                VerboseMode = PeerConfiguration.VerboseMode
+                VerboseMode = PeerConfiguration.Preferences.VerboseMode
             };
         }
     }
