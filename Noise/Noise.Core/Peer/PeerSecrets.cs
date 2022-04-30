@@ -24,7 +24,7 @@ namespace Noise.Core.Peer
         private PeerSecrets() { }
         public static class Factory
         {
-            public static PeerSecrets Initialize(string configurationSecret)
+            public static PeerSecrets FromParameters(string configurationSecret)
             {
                 if (configurationSecret.IsEmpty())
                     throw new ArgumentException("Invalid configuration secret.", nameof(configurationSecret));

@@ -20,7 +20,7 @@ namespace Noise.Core.Peer
         {
             try
             {
-                var property = typeof(PeerConfiguration)
+                var property = typeof(PeerPreferences)
                     .GetProperties()
                     .Where(p => p.CustomAttributes.Any(a => a.AttributeType == typeof(ConfigurablePreferenceAttribute)))
                     .Single(p => p.Name.ToLower() == name.ToLower());
@@ -50,7 +50,7 @@ namespace Noise.Core.Peer
 
         public IDictionary<string, string> GetPreferences()
         {
-            return typeof(PeerConfiguration)
+            return typeof(PeerPreferences)
                 .GetProperties()
                 .Where(p => p.CustomAttributes.Any(a => a.AttributeType == typeof(ConfigurablePreferenceAttribute)))
                 .ToDictionary(k => k.Name, v => (v.GetValue(this, null) is null) ? "" : v.GetValue(this, null).ToString());

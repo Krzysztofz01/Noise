@@ -24,7 +24,7 @@ namespace Noise.Core.Peer
         private PeerEndpoint() { }
         public static class Factory
         {
-            public static PeerEndpoint Create(string endpoint)
+            public static PeerEndpoint FromParameters(string endpoint)
             {
                 string ipv4Address = endpoint.Split(':').First();
 
