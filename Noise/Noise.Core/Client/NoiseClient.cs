@@ -93,12 +93,12 @@ namespace Noise.Core.Client
             {
                 var packetHandlingService = new PacketHandlingService();
 
-                var certification = _peerConfiguration.IndependentMediumCertification ?? null;
+                var certification = _peerConfiguration.Preferences.IndependentMediumCertification ?? null;
 
                 var (keyPacket, signaturePacket, receiverIdentityProve) = packetHandlingService.CreateSignaturePacket(
                     receiverPublicKey,
-                    _peerConfiguration.PublicKey,
-                    _peerConfiguration.PrivateKey,
+                    _peerConfiguration.Secrets.PublicKey,
+                    _peerConfiguration.Secrets.PrivateKey,
                     certification);
 
                 var bufferStream = PacketBufferStreamBuilder

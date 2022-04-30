@@ -84,11 +84,11 @@ namespace Noise.Core.Server
                 var signatureBuffer = bufferQueue.Dequeue();
 
                 var packetHandlingService = new PacketHandlingService();
-                var (signature, senderPublicKey, certification) = packetHandlingService.ReceiveIdentityProve(keyBuffer, signatureBuffer, _peerConfiguration.PrivateKey);
+                var (signature, senderPublicKey, certification) = packetHandlingService.ReceiveIdentityProve(keyBuffer, signatureBuffer, _peerConfiguration.Secrets.PrivateKey);
 
-                if (_peerConfiguration.IndependentMediumCertification is not null)
+                if (_peerConfiguration.Preferences.IndependentMediumCertification is not null)
                 {
-                    if (_peerConfiguration.IndependentMediumCertification != certification)
+                    if (_peerConfiguration.Preferences.IndependentMediumCertification != certification)
                     {
                         LogVerbose("Invalid independent medium certification configuration.");
                         return;
@@ -151,7 +151,7 @@ namespace Noise.Core.Server
                 var messageBuffer = bufferQueue.Dequeue();
 
                 var packetHandlingService = new PacketHandlingService();
-                var (senderIdentityProve, message) = packetHandlingService.ReceiveMessage(keyBuffer, messageBuffer, _peerConfiguration.PrivateKey);
+                var (senderIdentityProve, message) = packetHandlingService.ReceiveMessage(keyBuffer, messageBuffer, _peerConfiguration.Secrets.PrivateKey);
 
                 if (!_peerConfiguration.IsReceivingSignatureValid(senderIdentityProve))
                 {
