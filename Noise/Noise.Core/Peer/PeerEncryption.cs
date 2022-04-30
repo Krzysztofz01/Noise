@@ -15,7 +15,7 @@ namespace Noise.Core.Peer
 
         public static string EncryptPeerConfiguration(PeerConfiguration peerConfiguration)
         {
-            return SymmetricEncryptionHandler.Encrypt(peerConfiguration.Serialize(), peerConfiguration.ConfigurationSecret.FromUtf8ToBase64());
+            return SymmetricEncryptionHandler.Encrypt(peerConfiguration.Serialize(), peerConfiguration.Secrets.ConfigurationSecret.FromUtf8ToBase64());
         }
     }
 }

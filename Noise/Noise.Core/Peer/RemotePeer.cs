@@ -1,42 +1,73 @@
-﻿using System;
-using System.Text.Json.Serialization;
+﻿using Noise.Core.Extensions;
+using Noise.Core.Peer.Persistence;
+using System;
 
 namespace Noise.Core.Peer
 {
     public class RemotePeer
     {
-        [JsonIgnore]
         private const string _defaultAlias = "Anonymous";
 
-        public string PublicKey { get; init; }
-        public int Identifier { get; init; }
+        public int Identifier { get; private set; }
+        public string PublicKey { get; private set; }
+        public string Alias { get; private set; }
+        public string ReceivingSignature { get; private set; }
+        public string SendingSignature { get; private set; }
 
-        public string ReceivingSignature { get; set; }
-        public string Alias { get; set; }
-        public string SendingSignature { get; set; }
+        public void SetAlias(string alias)
+        {
+            if (alias.IsEmpty())
+                throw new ArgumentNullException(nameof(alias), "Invalid alias value for peer.");
 
-        public void SetAlias(string alias) => Alias = alias;
+            Alias = alias;
+        }
+
         public void SetReceivingSignature(string receivingSignature) => ReceivingSignature = receivingSignature;
         public void SetSendingSignature(string sendingSignature) => SendingSignature = sendingSignature;
 
-        [JsonConstructor]
-        [Obsolete("This constructor is only for deserialization and ,,private'' usage. Use one of the methods of the RemotePeer.Factory class.")]
-        public RemotePeer() { }
+        public RemotePeerPersistence Serialize() 
+        {
+            return new RemotePeerPersistence
+            {
+                Identifier = Identifier,
+                PublicKey = PublicKey,
+                Alias = Alias,
+                ReceivingSignature = ReceivingSignature,
+                SendingSignature = SendingSignature
+            };
+        }
 
+        private RemotePeer() { }
         public static class Factory
         {
             public static RemotePeer FromParameters(string publicKey, int identifier, string receivingSignature, string alias = null)
             {
-                #pragma warning disable CS0618 // Type or member is obsolete
+                if (publicKey.IsEmpty())
+                    throw new ArgumentNullException(nameof(publicKey), "Invalid public key for peer.");
+
+                if (alias is not null && alias.Trim() == string.Empty)
+                    throw new ArgumentNullException(nameof(alias), "Invalid alias value for peer.");
+
                 return new RemotePeer
                 {
-                    PublicKey = publicKey,
                     Identifier = identifier,
+                    PublicKey = publicKey,
+                    Alias = alias ?? _defaultAlias,
                     ReceivingSignature = receivingSignature,
-                    SendingSignature = null,
-                    Alias = alias ?? _defaultAlias
+                    SendingSignature = null
                 };
-                #pragma warning restore CS0618 // Type or member is obsolete
+            }
+
+            public static RemotePeer Deserialize(RemotePeerPersistence remotePeer)
+            {
+                return new RemotePeer
+                {
+                    Identifier = remotePeer.Identifier,
+                    PublicKey = remotePeer.PublicKey,
+                    Alias = remotePeer.Alias,
+                    ReceivingSignature = remotePeer.ReceivingSignature,
+                    SendingSignature = remotePeer.SendingSignature
+                };
             }
         }
     }

@@ -116,11 +116,11 @@ namespace Noise.Host
         private void ExecuteInfo()
         {
             ((OutputMonitor)_outputMonitor).WriteRaw("Local peer public key:", ConsoleColor.Green);
-            ((OutputMonitor)_outputMonitor).WriteRaw(_peerConfiguration.PublicKey, ConsoleColor.Yellow);
+            ((OutputMonitor)_outputMonitor).WriteRaw(_peerConfiguration.Secrets.PublicKey, ConsoleColor.Yellow);
 
             _outputMonitor.WriteRaw(string.Empty);
             ((OutputMonitor)_outputMonitor).WriteRaw("Configuration:", ConsoleColor.Green);
-            foreach (var option in _peerConfiguration.GetConfiguration())
+            foreach (var option in _peerConfiguration.GetPreferences())
             {
                 ((OutputMonitor)_outputMonitor).WriteRaw($"{option.Key}: {option.Value}", ConsoleColor.Yellow);
             }
@@ -138,7 +138,7 @@ namespace Noise.Host
                 var value = args.Skip(2).SingleOrDefault() ??
                     throw new CommandHandlerException(usage);
 
-                if (!_peerConfiguration.ApplyConfiguration(property, value))
+                if (!_peerConfiguration.ApplyPreference(property, value))
                     throw new CommandHandlerException($"Failed to apply: {value} to: {property} option.");
 
                 ((OutputMonitor)_outputMonitor).WriteRaw($"Successful applied: {value} to: {property} option.", ConsoleColor.Green);
@@ -153,7 +153,7 @@ namespace Noise.Host
         {
             return new NoiseClient(endpoint, _outputMonitor, _peerConfiguration, new NoiseClientConfiguration
             {
-                VerboseMode = _peerConfiguration.VerboseMode
+                VerboseMode = _peerConfiguration.Preferences.VerboseMode
             });
         }
 
@@ -173,7 +173,7 @@ namespace Noise.Host
 
                 foreach (var endpoint in _peerConfiguration.GetEndpoints())
                 {
-                    using var client = CreateClient(endpoint);
+                    using var client = CreateClient(endpoint.Endpoint);
                     await client.SendSignature(selectedPeer.PublicKey, cts.Token);
                 }
             }
@@ -200,7 +200,7 @@ namespace Noise.Host
 
                 foreach (var endpoint in _peerConfiguration.GetEndpoints())
                 {
-                    using var client = CreateClient(endpoint);
+                    using var client = CreateClient(endpoint.Endpoint);
                     await client.SendMessage(selectedPeer.PublicKey, messageStringBuilder.ToString(), cts.Token);
                 }
 
@@ -239,7 +239,7 @@ namespace Noise.Host
                 {
                     foreach (var endpoint in _peerConfiguration.GetEndpoints())
                     {
-                        _outputMonitor.WriteRaw(endpoint, true);
+                        _outputMonitor.WriteRaw(endpoint.Endpoint, true);
                     }
 
                     return;

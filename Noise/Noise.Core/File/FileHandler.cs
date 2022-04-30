@@ -55,7 +55,7 @@ namespace Noise.Core.File
                 var fileName = $"{ DateTime.Now.ToString("yyyyMMddHHmmss") }.noisepeer";
                 var filePath = Path.Combine(Directory.GetCurrentDirectory(), fileName);
 
-                await System.IO.File.WriteAllTextAsync(filePath, peerConfiguration.PublicKey);
+                await System.IO.File.WriteAllTextAsync(filePath, peerConfiguration.Secrets.PublicKey);
 
                 return true;
             }

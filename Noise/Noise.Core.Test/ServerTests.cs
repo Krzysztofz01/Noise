@@ -15,7 +15,7 @@ namespace Noise.Core.Test
         public async void NoiseServerShouldStartWithoutConfiguration()
         {
             var outputMonitor = new Mock<IOutputMonitor>().Object;
-            var peerConfiguration = new Mock<PeerConfiguration>().Object;
+            var peerConfiguration = MockupPeerConfiguration;
 
             using var server = new NoiseServer(outputMonitor, peerConfiguration);
 
@@ -64,5 +64,8 @@ namespace Noise.Core.Test
                 };
             });
         }
+
+        private PeerConfiguration MockupPeerConfiguration =>
+            PeerConfiguration.Factory.Initialize(Guid.NewGuid().ToString());
     }
 }
