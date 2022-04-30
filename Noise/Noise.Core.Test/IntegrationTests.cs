@@ -16,7 +16,7 @@ namespace Noise.Core.Test
     [Collection("Sequential")]
     public class IntegrationTests
     {
-        [Fact]
+        [Fact(Skip = "Integration tests skipped by default.")]
         public async void ServerShouldReceiveClientsMessagePacket()
         {
             var mockupOutputMonitor = MockupOutputMonitor;
@@ -27,10 +27,10 @@ namespace Noise.Core.Test
             var peer1ToPeer2Signature = SignatureBuilder.GenerateSignature();
             var peer2ToPeer1Signature = SignatureBuilder.GenerateSignature();
 
-            mockupPeer1.InsertPeer(mockupPeer2.PublicKey, peer2ToPeer1Signature);
+            mockupPeer1.InsertPeer(mockupPeer2.Secrets.PublicKey, peer2ToPeer1Signature);
             mockupPeer1.GetPeerByReceivingSignature(peer2ToPeer1Signature).SetSendingSignature(peer1ToPeer2Signature);
 
-            mockupPeer2.InsertPeer(mockupPeer1.PublicKey, peer1ToPeer2Signature);
+            mockupPeer2.InsertPeer(mockupPeer1.Secrets.PublicKey, peer1ToPeer2Signature);
             mockupPeer2.GetPeerByReceivingSignature(peer1ToPeer2Signature).SetSendingSignature(peer2ToPeer1Signature);
 
             var received = false;
@@ -45,14 +45,14 @@ namespace Noise.Core.Test
             using var client = new NoiseClient(IPAddress.Loopback.ToString(), mockupOutputMonitor, mockupPeer2);
 
             var message = "Hello World";
-            await client.SendMessage(mockupPeer1.PublicKey, message);
+            await client.SendMessage(mockupPeer1.Secrets.PublicKey, message);
 
             Thread.Sleep(MockupThrottleDelayMs);
 
             Assert.True(received);
         }
 
-        [Fact]
+        [Fact(Skip = "Integration tests skipped by default.")]
         public async void ServerShouldReceiveClientsPingPacket()
         {
             var mockupOutputMonitor = MockupOutputMonitor;
@@ -75,7 +75,7 @@ namespace Noise.Core.Test
             Assert.True(received);
         }
 
-        [Fact]
+        [Fact(Skip = "Integration tests skipped by default.")]
         public async void ServerShouldreceiveClientsSignaturePacket()
         {
             var mockupOutputMonitor = MockupOutputMonitor;
@@ -83,7 +83,7 @@ namespace Noise.Core.Test
             var mockupPeer1 = MockupPeerConfiguration;
             var mockupPeer2 = MockupPeerConfiguration;
 
-            mockupPeer2.InsertPeer(mockupPeer1.PublicKey, SignatureBuilder.GenerateSignature());
+            mockupPeer2.InsertPeer(mockupPeer1.Secrets.PublicKey, SignatureBuilder.GenerateSignature());
 
             var received = false;
             void AssertEventOnSignatureReceived(object sender, SignatureReceivedEventArgs e) => received = true;
@@ -95,7 +95,7 @@ namespace Noise.Core.Test
             Thread.Sleep(MockupThrottleDelayMs);
 
             using var client = new NoiseClient(IPAddress.Loopback.ToString(), mockupOutputMonitor, mockupPeer2);
-            await client.SendSignature(mockupPeer1.PublicKey);
+            await client.SendSignature(mockupPeer1.Secrets.PublicKey);
 
             Thread.Sleep(MockupThrottleDelayMs);
 

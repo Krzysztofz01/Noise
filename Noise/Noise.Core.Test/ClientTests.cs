@@ -13,7 +13,7 @@ namespace Noise.Core.Test
         public void NoiseClientShouldCreateForValidEndpoint()
         {
             var outputMonitor = new Mock<IOutputMonitor>().Object;
-            var peerConfiguration = new Mock<PeerConfiguration>().Object;
+            var peerConfiguration = MockupPeerConfiguration;
 
             var endpoint = "127.0.0.1";
 
@@ -24,7 +24,7 @@ namespace Noise.Core.Test
         public void NoiseClientShouldThrowExceptionForInvalidEndpoint()
         {
             var outputMonitor = new Mock<IOutputMonitor>().Object;
-            var peerConfiguration = new Mock<PeerConfiguration>().Object;
+            var peerConfiguration = MockupPeerConfiguration;
 
             var endpoint = "300.300.300.300";
 
@@ -56,5 +56,8 @@ namespace Noise.Core.Test
                 };
             });
         }
+
+        private PeerConfiguration MockupPeerConfiguration =>
+            PeerConfiguration.Factory.Initialize(Guid.NewGuid().ToString());
     }
 }
