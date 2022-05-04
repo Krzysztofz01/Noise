@@ -25,9 +25,13 @@ namespace Noise.Core.Peer
 
         public IEnumerable<PeerEndpoint> GetEndpoints(bool onlyConnected = true)
         {
-            return onlyConnected
-                ? _peerEndpoints.Where(e => e.IsConnected)
-                : _peerEndpoints;
+            if (!onlyConnected) return _peerEndpoints;
+
+            return _peerEndpoints
+                .Where(e =>
+                    e.IsConnected ||
+                    e.LastRequestAttempt is null ||
+                    e.LastRequestAttempt.Value.AddSeconds(Preferences.EndpointAttemptIntervalSeconds) < DateTime.Now);
         }
 
         public IEnumerable<RemotePeer> GetPeers()
@@ -50,6 +54,14 @@ namespace Noise.Core.Peer
                 throw new PeerDataException(PeerDataProblemType.ENDPOINT_NOT_FOUND);
 
             _peerEndpoints.Single(e => e.Endpoint == endpoint).SetDisconnected();
+        }
+
+        public void SetEndpointAsConnected(string endpoint)
+        {
+            if (!IsEndpointKnown(endpoint))
+                throw new PeerDataException(PeerDataProblemType.ENDPOINT_NOT_FOUND);
+
+            _peerEndpoints.Single(e => e.Endpoint == endpoint).SetConnected();
         }
 
         public void InsertPeer(string publicKey, string receivingSignature = null, string alias = null)
