@@ -20,12 +20,19 @@ In order to discover new peers, we can add them by hand (public key and IP addre
 
 ## Installation
 ```
-# Windows
+# Installation on Windows
 cmd build.cmd
 
-# Linux
+# Update to latest version on Windows
+cmd patch.cmd
+
+# Installtion on Linux
 chmod +x ./build.sh
 sudo sh ./build.sh
+
+# Update to latest version on Linux
+chmod +x ./patch.sh
+sudo sh ./patch.sh
 
 ```
 
