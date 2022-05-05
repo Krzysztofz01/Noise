@@ -16,6 +16,9 @@ namespace Noise.Core.Peer
         [ConfigurablePreference]
         public string IndependentMediumCertification { get; private set; }
 
+        [ConfigurablePreference]
+        public bool FixedPublicKeyValidationLength { get; private set; }
+
         public bool ApplyPreference(string name, string value)
         {
             try
@@ -62,7 +65,8 @@ namespace Noise.Core.Peer
             {
                 VerboseMode = VerboseMode,
                 UseTracker = UseTracker,
-                IndependentMediumCertification = IndependentMediumCertification
+                IndependentMediumCertification = IndependentMediumCertification,
+                FixedPublicKeyValidationLength = FixedPublicKeyValidationLength
             };
         }
 
@@ -75,7 +79,8 @@ namespace Noise.Core.Peer
                 {
                     VerboseMode = false,
                     UseTracker = false,
-                    IndependentMediumCertification = string.Empty
+                    IndependentMediumCertification = string.Empty,
+                    FixedPublicKeyValidationLength = true
                 };
             }
 
@@ -85,7 +90,8 @@ namespace Noise.Core.Peer
                 {
                     VerboseMode = peerPreferences.VerboseMode,
                     UseTracker = peerPreferences.UseTracker,
-                    IndependentMediumCertification = peerPreferences.IndependentMediumCertification
+                    IndependentMediumCertification = peerPreferences.IndependentMediumCertification,
+                    FixedPublicKeyValidationLength = peerPreferences.FixedPublicKeyValidationLength
                 };
             }
         }
