@@ -10,6 +10,8 @@ namespace Noise.Core.Peer
 {
     public class PeerConfiguration
     {
+        private const int _publicKeyLength = 684;
+
         private IList<PeerEndpoint> _peerEndpoints;
         private IList<RemotePeer> _remotePeers;
 
@@ -66,6 +68,12 @@ namespace Noise.Core.Peer
 
         public void InsertPeer(string publicKey, string receivingSignature = null, string alias = null)
         {
+            if (publicKey.IsEmpty())
+                throw new ArgumentNullException(nameof(publicKey), "Invalid public key for peer.");
+
+            if (publicKey.Length != _publicKeyLength && Preferences.FixedPublicKeyValidationLength)
+                throw new InvalidOperationException("Invalid public key format or length.");
+
             if (publicKey == Secrets.PublicKey)
                 throw new InvalidOperationException("Can not insert own public key.");
   

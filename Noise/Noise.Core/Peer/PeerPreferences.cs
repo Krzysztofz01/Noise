@@ -22,6 +22,9 @@ namespace Noise.Core.Peer
         [ConfigurablePreference]
         public int EndpointAttemptIntervalSeconds { get; private set; }
 
+        [ConfigurablePreference]
+        public bool FixedPublicKeyValidationLength { get; private set; }
+
         public bool ApplyPreference(string name, string value)
         {
             try
@@ -70,7 +73,8 @@ namespace Noise.Core.Peer
                 UseTracker = UseTracker,
                 IndependentMediumCertification = IndependentMediumCertification,
                 UseEndpointAttemptFilter = UseEndpointAttemptFilter,
-                EndpointAttemptIntervalSeconds = EndpointAttemptIntervalSeconds
+                EndpointAttemptIntervalSeconds = EndpointAttemptIntervalSeconds,
+                FixedPublicKeyValidationLength = FixedPublicKeyValidationLength
             };
         }
 
@@ -85,7 +89,8 @@ namespace Noise.Core.Peer
                     UseTracker = false,
                     IndependentMediumCertification = string.Empty,
                     UseEndpointAttemptFilter = true,
-                    EndpointAttemptIntervalSeconds = 60 * 5
+                    EndpointAttemptIntervalSeconds = 60 * 5,
+                    FixedPublicKeyValidationLength = true
                 };
             }
 
@@ -99,7 +104,8 @@ namespace Noise.Core.Peer
                     UseTracker = peerPreferences.UseTracker ?? defaultPreferences.UseTracker,
                     IndependentMediumCertification = peerPreferences.IndependentMediumCertification ?? defaultPreferences.IndependentMediumCertification,
                     UseEndpointAttemptFilter = peerPreferences.UseEndpointAttemptFilter ?? defaultPreferences.UseEndpointAttemptFilter,
-                    EndpointAttemptIntervalSeconds = peerPreferences.EndpointAttemptIntervalSeconds ?? defaultPreferences.EndpointAttemptIntervalSeconds
+                    EndpointAttemptIntervalSeconds = peerPreferences.EndpointAttemptIntervalSeconds ?? defaultPreferences.EndpointAttemptIntervalSeconds,
+                    FixedPublicKeyValidationLength = peerPreferences.FixedPublicKeyValidationLength ?? defaultPreferences.FixedPublicKeyValidationLength
                 };
             }
         }

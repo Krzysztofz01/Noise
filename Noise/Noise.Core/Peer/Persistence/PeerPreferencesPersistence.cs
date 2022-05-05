@@ -7,5 +7,6 @@
         public string IndependentMediumCertification { get; set; }
         public bool? UseEndpointAttemptFilter { get; set; }
         public int? EndpointAttemptIntervalSeconds { get; set; }
+        public bool? FixedPublicKeyValidationLength { get; set; }
     }
 }
