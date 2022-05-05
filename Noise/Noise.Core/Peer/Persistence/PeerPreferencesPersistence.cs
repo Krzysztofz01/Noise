@@ -8,5 +8,14 @@
         public bool? UseEndpointAttemptFilter { get; set; }
         public int? EndpointAttemptIntervalSeconds { get; set; }
         public bool? FixedPublicKeyValidationLength { get; set; }
+        public int? ServerStreamBufferSize { get; set; }
+        public bool? ServerEnableKeepAlive { get; set; }
+        public int? ServerKeepAliveInterval { get; set; }
+        public int? ServerKeepAliveTime { get; set; }
+        public int? ServerKeepAliveRetryCount { get; set; }
+        public int? ClientStreamBufferSize { get; set; }
+        public int? ClientConnectTimeoutMs { get; set; }
+        public int? ClientReadTimeoutMs { get; set; }
+        public int? ClientMaxConnectRetryCount { get; set; }
     }
 }

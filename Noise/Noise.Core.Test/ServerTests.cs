@@ -39,8 +39,6 @@ namespace Noise.Core.Test
             {
                 VerboseMode = true,
                 StreamBufferSize = 8000,
-                IdleConnectionTimeoutMs = 6000,
-                IdleConnectionEvalIntervalMs = 2500,
                 EnableKeepAlive = false,
                 KeepAliveInterval = 1,
                 KeepAliveTime = 1,
@@ -56,8 +54,6 @@ namespace Noise.Core.Test
                 new NoiseServerConfiguration
                 {
                     StreamBufferSize = 0,
-                    IdleConnectionTimeoutMs = -1,
-                    IdleConnectionEvalIntervalMs = 0,
                     KeepAliveInterval = 0,
                     KeepAliveTime = 0,
                     KeepAliveRetryCount = 0

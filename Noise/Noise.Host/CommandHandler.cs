@@ -153,7 +153,11 @@ namespace Noise.Host
         {
             return new NoiseClient(endpoint, _outputMonitor, _peerConfiguration, new NoiseClientConfiguration
             {
-                VerboseMode = _peerConfiguration.Preferences.VerboseMode
+                VerboseMode = _peerConfiguration.Preferences.VerboseMode,
+                StreamBufferSize = _peerConfiguration.Preferences.ClientStreamBufferSize,
+                ConnectTimeoutMs = _peerConfiguration.Preferences.ClientConnectTimeoutMs,
+                ReadTimeoutMs = _peerConfiguration.Preferences.ClientReadTimeoutMs,
+                MaxConnectRetryCount = _peerConfiguration.Preferences.ClientMaxConnectRetryCount
             });
         }
 
