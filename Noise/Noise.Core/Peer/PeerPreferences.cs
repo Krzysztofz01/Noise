@@ -25,6 +25,33 @@ namespace Noise.Core.Peer
         [ConfigurablePreference]
         public bool FixedPublicKeyValidationLength { get; private set; }
 
+        [ConfigurablePreference]
+        public int ServerStreamBufferSize { get; private set; }
+
+        [ConfigurablePreference]
+        public bool ServerEnableKeepAlive { get; private set; }
+
+        [ConfigurablePreference]
+        public int ServerKeepAliveInterval { get; private set; }
+
+        [ConfigurablePreference]
+        public int ServerKeepAliveTime { get; private set; }
+
+        [ConfigurablePreference]
+        public int ServerKeepAliveRetryCount { get; private set; }
+
+        [ConfigurablePreference]
+        public int ClientStreamBufferSize { get; private set; }
+
+        [ConfigurablePreference]
+        public int ClientConnectTimeoutMs { get; private set; }
+
+        [ConfigurablePreference]
+        public int ClientReadTimeoutMs { get; private set; }
+
+        [ConfigurablePreference]
+        public int ClientMaxConnectRetryCount { get; private set; }
+
         public bool ApplyPreference(string name, string value)
         {
             try
@@ -74,7 +101,16 @@ namespace Noise.Core.Peer
                 IndependentMediumCertification = IndependentMediumCertification,
                 UseEndpointAttemptFilter = UseEndpointAttemptFilter,
                 EndpointAttemptIntervalSeconds = EndpointAttemptIntervalSeconds,
-                FixedPublicKeyValidationLength = FixedPublicKeyValidationLength
+                FixedPublicKeyValidationLength = FixedPublicKeyValidationLength,
+                ServerStreamBufferSize = ServerStreamBufferSize,
+                ServerEnableKeepAlive = ServerEnableKeepAlive,
+                ServerKeepAliveInterval = ServerKeepAliveInterval,
+                ServerKeepAliveTime = ServerKeepAliveTime,
+                ServerKeepAliveRetryCount = ServerKeepAliveRetryCount,
+                ClientStreamBufferSize = ClientStreamBufferSize,
+                ClientConnectTimeoutMs = ClientConnectTimeoutMs,
+                ClientReadTimeoutMs = ClientReadTimeoutMs,
+                ClientMaxConnectRetryCount = ClientMaxConnectRetryCount
             };
         }
 
@@ -90,7 +126,16 @@ namespace Noise.Core.Peer
                     IndependentMediumCertification = string.Empty,
                     UseEndpointAttemptFilter = true,
                     EndpointAttemptIntervalSeconds = 60 * 5,
-                    FixedPublicKeyValidationLength = true
+                    FixedPublicKeyValidationLength = true,
+                    ServerStreamBufferSize = 16384,
+                    ServerEnableKeepAlive = false,
+                    ServerKeepAliveInterval = 2,
+                    ServerKeepAliveTime = 2,
+                    ServerKeepAliveRetryCount = 2,
+                    ClientStreamBufferSize = 16384,
+                    ClientConnectTimeoutMs = 5000,
+                    ClientReadTimeoutMs = 1000,
+                    ClientMaxConnectRetryCount = 3
                 };
             }
 
@@ -105,7 +150,16 @@ namespace Noise.Core.Peer
                     IndependentMediumCertification = peerPreferences.IndependentMediumCertification ?? defaultPreferences.IndependentMediumCertification,
                     UseEndpointAttemptFilter = peerPreferences.UseEndpointAttemptFilter ?? defaultPreferences.UseEndpointAttemptFilter,
                     EndpointAttemptIntervalSeconds = peerPreferences.EndpointAttemptIntervalSeconds ?? defaultPreferences.EndpointAttemptIntervalSeconds,
-                    FixedPublicKeyValidationLength = peerPreferences.FixedPublicKeyValidationLength ?? defaultPreferences.FixedPublicKeyValidationLength
+                    FixedPublicKeyValidationLength = peerPreferences.FixedPublicKeyValidationLength ?? defaultPreferences.FixedPublicKeyValidationLength,
+                    ServerStreamBufferSize = peerPreferences.ServerStreamBufferSize ?? defaultPreferences.ServerStreamBufferSize,
+                    ServerEnableKeepAlive = peerPreferences.ServerEnableKeepAlive ?? defaultPreferences.ServerEnableKeepAlive,
+                    ServerKeepAliveInterval = peerPreferences.ServerKeepAliveInterval ?? defaultPreferences.ServerKeepAliveInterval,
+                    ServerKeepAliveTime = peerPreferences.ServerKeepAliveTime ?? defaultPreferences.ServerKeepAliveTime,
+                    ServerKeepAliveRetryCount = peerPreferences.ServerKeepAliveRetryCount ?? defaultPreferences.ServerKeepAliveRetryCount,
+                    ClientStreamBufferSize = peerPreferences.ClientStreamBufferSize ?? defaultPreferences.ClientStreamBufferSize,
+                    ClientConnectTimeoutMs = peerPreferences.ClientConnectTimeoutMs ?? defaultPreferences.ClientConnectTimeoutMs,
+                    ClientReadTimeoutMs = peerPreferences.ClientReadTimeoutMs ?? defaultPreferences.ClientReadTimeoutMs,
+                    ClientMaxConnectRetryCount = peerPreferences.ClientMaxConnectRetryCount ?? defaultPreferences.ClientMaxConnectRetryCount
                 };
             }
         }
