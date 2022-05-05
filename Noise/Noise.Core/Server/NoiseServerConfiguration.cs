@@ -22,7 +22,8 @@ namespace Noise.Core.Server
             }
         }
 
-        private int _idleConnectionTimeoutMs = 15000;
+        // TODO: Unused server configuration preference can be removed.
+        /*private int _idleConnectionTimeoutMs = 15000;
         public int IdleConnectionTimeoutMs
         {
             get => _idleConnectionTimeoutMs;
@@ -31,9 +32,10 @@ namespace Noise.Core.Server
                 if (value < 0) throw new ArgumentException("Invalid IdleConnectionTimeoutMs.");
                 _idleConnectionTimeoutMs = value;
             }
-        }
+        }*/
 
-        private int _idleConnectionEvalIntervalMs = 5000;
+        // TODO: Unused server configuration preference can be removed.
+        /*private int _idleConnectionEvalIntervalMs = 5000;
         public int IdleConnectionEvalIntervalMs
         {
             get => _idleConnectionEvalIntervalMs;
@@ -42,7 +44,7 @@ namespace Noise.Core.Server
                 if (value < 1) throw new ArgumentException("Invalid IdleConnectionEvalIntervalMs.");
                 _idleConnectionEvalIntervalMs = value;
             }
-        }
+        }*/
 
         private bool _enableKeepAlive = false;
         public bool EnableKeepAlive

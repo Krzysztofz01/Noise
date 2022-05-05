@@ -8,7 +8,6 @@ using Noise.Host.Abstraction;
 using Noise.Host.Exceptions;
 using Noise.Host.Modes;
 using System;
-using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -126,7 +125,12 @@ namespace Noise.Host
         {
             return new NoiseServerConfiguration
             {
-                VerboseMode = PeerConfiguration.Preferences.VerboseMode
+                VerboseMode = PeerConfiguration.Preferences.VerboseMode,
+                StreamBufferSize = PeerConfiguration.Preferences.ServerStreamBufferSize,
+                EnableKeepAlive = PeerConfiguration.Preferences.ServerEnableKeepAlive,
+                KeepAliveInterval = PeerConfiguration.Preferences.ServerKeepAliveInterval,
+                KeepAliveTime = PeerConfiguration.Preferences.ServerKeepAliveTime,
+                KeepAliveRetryCount = PeerConfiguration.Preferences.ServerKeepAliveRetryCount
             };
         }
     }
