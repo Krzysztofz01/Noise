@@ -321,7 +321,10 @@ namespace Noise.Core.Server
                 }
                 catch (Exception ex)
                 {
-                    LogVerbose($"Unexpected exception while awaiting connections. {ex.Message}");
+                    if (_isListening && !_token.IsCancellationRequested)
+                    {
+                        LogVerbose($"Unexpected exception while awaiting connections. {ex.Message}");
+                    }
 
                     if (peer is not null) peer.Dispose();
                     continue;
