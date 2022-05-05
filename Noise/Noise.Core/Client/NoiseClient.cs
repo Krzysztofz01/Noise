@@ -290,6 +290,12 @@ namespace Noise.Core.Client
             }
             catch (Exception)
             {
+                if (_peerConfiguration.Preferences.UseEndpointAttemptFilter)
+                {
+                    LogVerbose($"Endpoint: {_peerIp} will be marked as a disconnected endpoint.");
+                    _peerConfiguration.SetEndpointAsDisconnected(_peerIp);
+                }
+
                 throw;
             }
 

@@ -17,6 +17,12 @@ namespace Noise.Core.Peer
         public string IndependentMediumCertification { get; private set; }
 
         [ConfigurablePreference]
+        public bool UseEndpointAttemptFilter { get; private set; }
+
+        [ConfigurablePreference]
+        public int EndpointAttemptIntervalSeconds { get; private set; }
+
+        [ConfigurablePreference]
         public bool FixedPublicKeyValidationLength { get; private set; }
 
         public bool ApplyPreference(string name, string value)
@@ -66,6 +72,8 @@ namespace Noise.Core.Peer
                 VerboseMode = VerboseMode,
                 UseTracker = UseTracker,
                 IndependentMediumCertification = IndependentMediumCertification,
+                UseEndpointAttemptFilter = UseEndpointAttemptFilter,
+                EndpointAttemptIntervalSeconds = EndpointAttemptIntervalSeconds,
                 FixedPublicKeyValidationLength = FixedPublicKeyValidationLength
             };
         }
@@ -80,18 +88,24 @@ namespace Noise.Core.Peer
                     VerboseMode = false,
                     UseTracker = false,
                     IndependentMediumCertification = string.Empty,
+                    UseEndpointAttemptFilter = true,
+                    EndpointAttemptIntervalSeconds = 60 * 5,
                     FixedPublicKeyValidationLength = true
                 };
             }
 
             public static PeerPreferences Deserialize(PeerPreferencesPersistence peerPreferences)
             {
+                var defaultPreferences = Initialize();
+
                 return new PeerPreferences
                 {
-                    VerboseMode = peerPreferences.VerboseMode,
-                    UseTracker = peerPreferences.UseTracker,
-                    IndependentMediumCertification = peerPreferences.IndependentMediumCertification,
-                    FixedPublicKeyValidationLength = peerPreferences.FixedPublicKeyValidationLength
+                    VerboseMode = peerPreferences.VerboseMode ?? defaultPreferences.VerboseMode,
+                    UseTracker = peerPreferences.UseTracker ?? defaultPreferences.UseTracker,
+                    IndependentMediumCertification = peerPreferences.IndependentMediumCertification ?? defaultPreferences.IndependentMediumCertification,
+                    UseEndpointAttemptFilter = peerPreferences.UseEndpointAttemptFilter ?? defaultPreferences.UseEndpointAttemptFilter,
+                    EndpointAttemptIntervalSeconds = peerPreferences.EndpointAttemptIntervalSeconds ?? defaultPreferences.EndpointAttemptIntervalSeconds,
+                    FixedPublicKeyValidationLength = peerPreferences.FixedPublicKeyValidationLength ?? defaultPreferences.FixedPublicKeyValidationLength
                 };
             }
         }
