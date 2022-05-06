@@ -8,7 +8,7 @@ mv ./bin ./bin-pre
 
 # Fetching the latest version
 mkdir ./patch
-git clone https://github.com/Krzysztofz01/Noise.git ./patch
+git clone --branch main https://github.com/Krzysztofz01/Noise.git ./patch
 
 # Latest version build and binary preparation installation in temp directory
 dotnet publish ./patch/Noise/Noise.Host/Noise.Host.csproj --runtime linux-x64 --output ./patch/build --self-contained true --configuration Release /p:PublishSingleFile=true /p:IncludeNativeLibrariesForSelfExtract=true
@@ -37,4 +37,5 @@ mv ./patch/* ./
 mv ./bin-pre/peer.noise ./bin/peer.noise
 
 # Installation cleanup
-rm ./bin-pre
+rm -rf ./patch
+rm -rf ./bin-pre
