@@ -10,6 +10,8 @@ namespace Noise.Core.Peer
 {
     public class PeerConfiguration
     {
+        private const int _publicKeyLength = 684;
+
         private IList<PeerEndpoint> _peerEndpoints;
         private IList<RemotePeer> _remotePeers;
 
@@ -25,9 +27,13 @@ namespace Noise.Core.Peer
 
         public IEnumerable<PeerEndpoint> GetEndpoints(bool onlyConnected = true)
         {
-            return onlyConnected
-                ? _peerEndpoints.Where(e => e.IsConnected)
-                : _peerEndpoints;
+            if (!onlyConnected) return _peerEndpoints;
+
+            return _peerEndpoints
+                .Where(e =>
+                    e.IsConnected ||
+                    e.LastRequestAttempt is null ||
+                    e.LastRequestAttempt.Value.AddSeconds(Preferences.EndpointAttemptIntervalSeconds) < DateTime.Now);
         }
 
         public IEnumerable<RemotePeer> GetPeers()
@@ -52,8 +58,22 @@ namespace Noise.Core.Peer
             _peerEndpoints.Single(e => e.Endpoint == endpoint).SetDisconnected();
         }
 
+        public void SetEndpointAsConnected(string endpoint)
+        {
+            if (!IsEndpointKnown(endpoint))
+                throw new PeerDataException(PeerDataProblemType.ENDPOINT_NOT_FOUND);
+
+            _peerEndpoints.Single(e => e.Endpoint == endpoint).SetConnected();
+        }
+
         public void InsertPeer(string publicKey, string receivingSignature = null, string alias = null)
         {
+            if (publicKey.IsEmpty())
+                throw new ArgumentNullException(nameof(publicKey), "Invalid public key for peer.");
+
+            if (publicKey.Length != _publicKeyLength && Preferences.FixedPublicKeyValidationLength)
+                throw new InvalidOperationException("Invalid public key format or length.");
+
             if (publicKey == Secrets.PublicKey)
                 throw new InvalidOperationException("Can not insert own public key.");
   

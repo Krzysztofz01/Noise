@@ -119,7 +119,7 @@ namespace Noise.Host
             ((OutputMonitor)_outputMonitor).WriteRaw(_peerConfiguration.Secrets.PublicKey, ConsoleColor.Yellow);
 
             _outputMonitor.WriteRaw(string.Empty);
-            ((OutputMonitor)_outputMonitor).WriteRaw("Configuration:", ConsoleColor.Green);
+            ((OutputMonitor)_outputMonitor).WriteRaw("Preferences:", ConsoleColor.Green);
             foreach (var option in _peerConfiguration.GetPreferences())
             {
                 ((OutputMonitor)_outputMonitor).WriteRaw($"{option.Key}: {option.Value}", ConsoleColor.Yellow);
@@ -153,7 +153,11 @@ namespace Noise.Host
         {
             return new NoiseClient(endpoint, _outputMonitor, _peerConfiguration, new NoiseClientConfiguration
             {
-                VerboseMode = _peerConfiguration.Preferences.VerboseMode
+                VerboseMode = _peerConfiguration.Preferences.VerboseMode,
+                StreamBufferSize = _peerConfiguration.Preferences.ClientStreamBufferSize,
+                ConnectTimeoutMs = _peerConfiguration.Preferences.ClientConnectTimeoutMs,
+                ReadTimeoutMs = _peerConfiguration.Preferences.ClientReadTimeoutMs,
+                MaxConnectRetryCount = _peerConfiguration.Preferences.ClientMaxConnectRetryCount
             });
         }
 
@@ -171,7 +175,7 @@ namespace Noise.Host
                 if (selectedPeer.SendingSignature is not null && !overrite)
                     throw new CommandHandlerException($"This peer has a signature assigned.{Environment.NewLine}{usage}");
 
-                foreach (var endpoint in _peerConfiguration.GetEndpoints())
+                foreach (var endpoint in _peerConfiguration.GetEndpoints(true))
                 {
                     using var client = CreateClient(endpoint.Endpoint);
                     await client.SendSignature(selectedPeer.PublicKey, cts.Token);
@@ -198,7 +202,7 @@ namespace Noise.Host
                 var messageStringBuilder = new StringBuilder(string.Empty);
                 foreach (var a in args) messageStringBuilder.Append(a);
 
-                foreach (var endpoint in _peerConfiguration.GetEndpoints())
+                foreach (var endpoint in _peerConfiguration.GetEndpoints(true))
                 {
                     using var client = CreateClient(endpoint.Endpoint);
                     await client.SendMessage(selectedPeer.PublicKey, messageStringBuilder.ToString(), cts.Token);
@@ -237,7 +241,7 @@ namespace Noise.Host
 
                 if (type == "endpoint")
                 {
-                    foreach (var endpoint in _peerConfiguration.GetEndpoints())
+                    foreach (var endpoint in _peerConfiguration.GetEndpoints(true))
                     {
                         _outputMonitor.WriteRaw(endpoint.Endpoint, true);
                     }

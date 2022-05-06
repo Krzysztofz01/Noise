@@ -41,7 +41,7 @@ namespace Noise.Core.Test
 
             var expectedCount = 2;
 
-            Assert.Equal(expectedCount, pc.GetEndpoints().Count());
+            Assert.Equal(expectedCount, pc.GetEndpoints(false).Count());
         }
 
         [Fact]
@@ -286,6 +286,30 @@ namespace Noise.Core.Test
             var expectedCount = 1;
 
             Assert.Equal(expectedCount, pc.GetEndpoints(true).Count());
+        }
+
+        [Fact]
+        public void PeerShoulUpdateConnectedStatusForEndpoint()
+        {
+            var pc = MockUpPeerConfiguration();
+
+            var firstEndpoint = "127.0.0.1";
+            pc.InsertEndpoint(firstEndpoint);
+
+            var secondEndpoint = "127.0.0.2";
+            pc.InsertEndpoint(secondEndpoint);
+
+            pc.SetEndpointAsDisconnected(firstEndpoint);
+
+            var expectedCountBefore = 1;
+
+            Assert.Equal(expectedCountBefore, pc.GetEndpoints(true).Count());
+
+            pc.SetEndpointAsConnected(firstEndpoint);
+
+            var expectedCountAfter = 2;
+
+            Assert.Equal(expectedCountAfter, pc.GetEndpoints(true).Count());
         }
 
         [Fact]

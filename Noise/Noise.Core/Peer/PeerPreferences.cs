@@ -16,6 +16,42 @@ namespace Noise.Core.Peer
         [ConfigurablePreference]
         public string IndependentMediumCertification { get; private set; }
 
+        [ConfigurablePreference]
+        public bool UseEndpointAttemptFilter { get; private set; }
+
+        [ConfigurablePreference]
+        public int EndpointAttemptIntervalSeconds { get; private set; }
+
+        [ConfigurablePreference]
+        public bool FixedPublicKeyValidationLength { get; private set; }
+
+        [ConfigurablePreference]
+        public int ServerStreamBufferSize { get; private set; }
+
+        [ConfigurablePreference]
+        public bool ServerEnableKeepAlive { get; private set; }
+
+        [ConfigurablePreference]
+        public int ServerKeepAliveInterval { get; private set; }
+
+        [ConfigurablePreference]
+        public int ServerKeepAliveTime { get; private set; }
+
+        [ConfigurablePreference]
+        public int ServerKeepAliveRetryCount { get; private set; }
+
+        [ConfigurablePreference]
+        public int ClientStreamBufferSize { get; private set; }
+
+        [ConfigurablePreference]
+        public int ClientConnectTimeoutMs { get; private set; }
+
+        [ConfigurablePreference]
+        public int ClientReadTimeoutMs { get; private set; }
+
+        [ConfigurablePreference]
+        public int ClientMaxConnectRetryCount { get; private set; }
+
         public bool ApplyPreference(string name, string value)
         {
             try
@@ -62,7 +98,19 @@ namespace Noise.Core.Peer
             {
                 VerboseMode = VerboseMode,
                 UseTracker = UseTracker,
-                IndependentMediumCertification = IndependentMediumCertification
+                IndependentMediumCertification = IndependentMediumCertification,
+                UseEndpointAttemptFilter = UseEndpointAttemptFilter,
+                EndpointAttemptIntervalSeconds = EndpointAttemptIntervalSeconds,
+                FixedPublicKeyValidationLength = FixedPublicKeyValidationLength,
+                ServerStreamBufferSize = ServerStreamBufferSize,
+                ServerEnableKeepAlive = ServerEnableKeepAlive,
+                ServerKeepAliveInterval = ServerKeepAliveInterval,
+                ServerKeepAliveTime = ServerKeepAliveTime,
+                ServerKeepAliveRetryCount = ServerKeepAliveRetryCount,
+                ClientStreamBufferSize = ClientStreamBufferSize,
+                ClientConnectTimeoutMs = ClientConnectTimeoutMs,
+                ClientReadTimeoutMs = ClientReadTimeoutMs,
+                ClientMaxConnectRetryCount = ClientMaxConnectRetryCount
             };
         }
 
@@ -75,17 +123,43 @@ namespace Noise.Core.Peer
                 {
                     VerboseMode = false,
                     UseTracker = false,
-                    IndependentMediumCertification = string.Empty
+                    IndependentMediumCertification = string.Empty,
+                    UseEndpointAttemptFilter = true,
+                    EndpointAttemptIntervalSeconds = 60 * 5,
+                    FixedPublicKeyValidationLength = true,
+                    ServerStreamBufferSize = 16384,
+                    ServerEnableKeepAlive = false,
+                    ServerKeepAliveInterval = 2,
+                    ServerKeepAliveTime = 2,
+                    ServerKeepAliveRetryCount = 2,
+                    ClientStreamBufferSize = 16384,
+                    ClientConnectTimeoutMs = 5000,
+                    ClientReadTimeoutMs = 1000,
+                    ClientMaxConnectRetryCount = 3
                 };
             }
 
             public static PeerPreferences Deserialize(PeerPreferencesPersistence peerPreferences)
             {
+                var defaultPreferences = Initialize();
+
                 return new PeerPreferences
                 {
-                    VerboseMode = peerPreferences.VerboseMode,
-                    UseTracker = peerPreferences.UseTracker,
-                    IndependentMediumCertification = peerPreferences.IndependentMediumCertification
+                    VerboseMode = peerPreferences.VerboseMode ?? defaultPreferences.VerboseMode,
+                    UseTracker = peerPreferences.UseTracker ?? defaultPreferences.UseTracker,
+                    IndependentMediumCertification = peerPreferences.IndependentMediumCertification ?? defaultPreferences.IndependentMediumCertification,
+                    UseEndpointAttemptFilter = peerPreferences.UseEndpointAttemptFilter ?? defaultPreferences.UseEndpointAttemptFilter,
+                    EndpointAttemptIntervalSeconds = peerPreferences.EndpointAttemptIntervalSeconds ?? defaultPreferences.EndpointAttemptIntervalSeconds,
+                    FixedPublicKeyValidationLength = peerPreferences.FixedPublicKeyValidationLength ?? defaultPreferences.FixedPublicKeyValidationLength,
+                    ServerStreamBufferSize = peerPreferences.ServerStreamBufferSize ?? defaultPreferences.ServerStreamBufferSize,
+                    ServerEnableKeepAlive = peerPreferences.ServerEnableKeepAlive ?? defaultPreferences.ServerEnableKeepAlive,
+                    ServerKeepAliveInterval = peerPreferences.ServerKeepAliveInterval ?? defaultPreferences.ServerKeepAliveInterval,
+                    ServerKeepAliveTime = peerPreferences.ServerKeepAliveTime ?? defaultPreferences.ServerKeepAliveTime,
+                    ServerKeepAliveRetryCount = peerPreferences.ServerKeepAliveRetryCount ?? defaultPreferences.ServerKeepAliveRetryCount,
+                    ClientStreamBufferSize = peerPreferences.ClientStreamBufferSize ?? defaultPreferences.ClientStreamBufferSize,
+                    ClientConnectTimeoutMs = peerPreferences.ClientConnectTimeoutMs ?? defaultPreferences.ClientConnectTimeoutMs,
+                    ClientReadTimeoutMs = peerPreferences.ClientReadTimeoutMs ?? defaultPreferences.ClientReadTimeoutMs,
+                    ClientMaxConnectRetryCount = peerPreferences.ClientMaxConnectRetryCount ?? defaultPreferences.ClientMaxConnectRetryCount
                 };
             }
         }

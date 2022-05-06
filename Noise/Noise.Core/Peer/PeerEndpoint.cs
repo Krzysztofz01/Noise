@@ -10,8 +10,19 @@ namespace Noise.Core.Peer
         public string Endpoint { get; private set; }
         public bool IsConnected { get; private set; }
 
-        public void SetConnected() => IsConnected = true;
-        public void SetDisconnected() => IsConnected = false;
+        public DateTime? LastRequestAttempt { get; private set; }
+
+        public void SetConnected()
+        {
+            IsConnected = true;
+            LastRequestAttempt = null;
+        }
+
+        public void SetDisconnected()
+        {
+            IsConnected = false;
+            LastRequestAttempt = DateTime.Now;
+        }
 
         public PeerEndpointPersistence Serialize()
         {
@@ -34,7 +45,8 @@ namespace Noise.Core.Peer
                 return new PeerEndpoint
                 {
                     Endpoint = ipv4Address,
-                    IsConnected = true
+                    IsConnected = true,
+                    LastRequestAttempt = null
                 };
             }
 
@@ -43,7 +55,8 @@ namespace Noise.Core.Peer
                 return new PeerEndpoint
                 {
                     Endpoint = peerEndpoint.Endpoint,
-                    IsConnected = true
+                    IsConnected = true,
+                    LastRequestAttempt = null
                 };
             }
         }

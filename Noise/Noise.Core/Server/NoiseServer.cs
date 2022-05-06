@@ -66,6 +66,13 @@ namespace Noise.Core.Server
         {
             var senderEndpoint = e.PeerEndpoint;
             LogVerbose($"Peer with endpoint: {senderEndpoint} disconnected.");
+
+            if (_peerConfiguration.Preferences.UseEndpointAttemptFilter)
+            {
+                // TODO: A new preference will be introduced to describe how to handle unknown endpoints that has connected to us.
+                if (_peerConfiguration.IsEndpointKnown(senderEndpoint))
+                    _peerConfiguration.SetEndpointAsConnected(senderEndpoint);
+            }
         }
 
         private void SignatureReceivedEventHandler(object sender, SignatureReceivedEventArgs e)
@@ -321,7 +328,10 @@ namespace Noise.Core.Server
                 }
                 catch (Exception ex)
                 {
-                    LogVerbose($"Unexpected exception while awaiting connections. {ex.Message}");
+                    if (_isListening && !_token.IsCancellationRequested)
+                    {
+                        LogVerbose($"Unexpected exception while awaiting connections. {ex.Message}");
+                    }
 
                     if (peer is not null) peer.Dispose();
                     continue;
