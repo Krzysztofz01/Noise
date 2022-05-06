@@ -12,8 +12,14 @@ rm -rf build
 
 rm -rf Noise
 
+rm -rf resources
+
+rm -rf .git
+
+rm -f .gitignore
+
 rm -f build.cmd
 
-rm -f build.sh
+rm -f patch.cmd
 
-mr -f patch.cmd
+rm -f build.sh

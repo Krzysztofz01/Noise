@@ -2,12 +2,26 @@
 
 set -e
 
-rm -f bin/noise.exe
+mv ./bin ./bin-pre
 
-git reset --hard
+mkdir ./patch
 
-git clean -fd
+git clone https://github.com/Krzysztofz01/Noise.git ./patch
 
-git pull origin main
+sudo chmod +x ./patch build.sh
 
-sh build.sh
+sudo sh build.sh
+
+rm -f LICENSE
+
+rm -f NOTICES
+
+rm -f README.md
+
+rm -f patch.sh
+
+mv ./patch/ ./
+
+mv ./bin-pre/peer.noise ./bin/peer.noise
+
+rm ./bin-pre
