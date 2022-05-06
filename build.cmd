@@ -13,7 +13,7 @@ RMDIR /s /q build
 RMDIR /s /q Noise
 RMDIR /s /q resources
 RMDIR /s /q .git
-RMDIR /q .gitignore
+DEL /q .gitignore
 DEL /q build.sh
 DEL /q patch.sh
 DEL /q build.cmd
