@@ -119,7 +119,7 @@ namespace Noise.Host
             ((OutputMonitor)_outputMonitor).WriteRaw(_peerConfiguration.Secrets.PublicKey, ConsoleColor.Yellow);
 
             _outputMonitor.WriteRaw(string.Empty);
-            ((OutputMonitor)_outputMonitor).WriteRaw("Configuration:", ConsoleColor.Green);
+            ((OutputMonitor)_outputMonitor).WriteRaw("Preferences:", ConsoleColor.Green);
             foreach (var option in _peerConfiguration.GetPreferences())
             {
                 ((OutputMonitor)_outputMonitor).WriteRaw($"{option.Key}: {option.Value}", ConsoleColor.Yellow);
