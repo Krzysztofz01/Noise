@@ -34,7 +34,7 @@ DEL /q patch.sh
 REM Replacing the latest version files and peer data transfer
 MOVE patch\* .
 MOVE patch\bin .
-MOVE bin-pre\peer.noise bin\peer-noise
+MOVE bin-pre\peer.noise bin\peer.noise
 
 REM Installation cleanup
 RMDIR /s /q patch
