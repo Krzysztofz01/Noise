@@ -106,7 +106,7 @@ namespace Noise.Core.Test
             new Mock<IOutputMonitor>().Object;
 
         private PeerConfiguration MockupPeerConfiguration =>
-            PeerConfiguration.Factory.Initialize(Guid.NewGuid().ToString());
+            PeerConfiguration.Factory.Initialize(Guid.NewGuid().ToString(), Constants.Version);
 
         public static int MockupThrottleDelayMs => 10000;
     }
