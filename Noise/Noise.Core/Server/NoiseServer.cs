@@ -190,7 +190,61 @@ namespace Noise.Core.Server
 
         private void DiscoveryReceivedEventHandler(object sender, DiscoveryReceivedEventArgs e)
         {
-            throw new NotImplementedException();
+            try
+            {
+                var senderEndpoint = e.PeerEndpoint;
+                LogVerbose($"Server received discovery packets from peer: {senderEndpoint}");
+
+                var bufferQueue = PacketBufferQueueBuilder
+                    .Create()
+                    .InsertBuffer(e.PacketBufferQueue)
+                    .Build();
+
+                var keyBuffer = bufferQueue.Dequeue();
+                var discoveryBuffer = bufferQueue.Dequeue();
+
+                var packetHandlingService = new PacketHandlingService();
+                var (endpoints, publicKeys, senderIdentityProve) = packetHandlingService.ReceiveDiscoveryCollections(keyBuffer, discoveryBuffer, _peerConfiguration.Secrets.PrivateKey);
+            
+                if (!_peerConfiguration.IsReceivingSignatureValid(senderIdentityProve))
+                {
+                    throw new PacketRejectedException(PacketRejectionReason.INVALID_IDENTITY_PROVE);
+                }
+
+                var senderPeer = _peerConfiguration.GetPeerByReceivingSignature(senderIdentityProve);
+                LogVerbose($"Discovery peer: {senderPeer.PublicKey}");
+
+                int endpointCount = _peerConfiguration.GetEndpoints().Count();
+                int peerCount = _peerConfiguration.GetPeers().Count();
+
+                if (_peerConfiguration.Preferences.AcceptPublicKeysViaDiscovery)
+                {
+                    foreach (var publicKey in publicKeys)
+                    {
+                        _peerConfiguration.InsertPeer(publicKey);
+                    }
+
+                    int discoveredPeers = _peerConfiguration.GetPeers().Count() - peerCount;
+                    LogVerbose($"Discovered {discoveredPeers} peer public keys.");
+                }
+
+                foreach (var endpoint in endpoints) _peerConfiguration.InsertEndpoint(endpoint);
+
+                int discoveredEndpoints = _peerConfiguration.GetEndpoints().Count() - endpointCount;
+                LogVerbose($"Discovered {discoveredEndpoints} endpoints.");
+            }
+            catch (PacketRejectedException ex)
+            {
+                LogVerbose(ex.Message);
+            }
+            catch (PeerDataException ex)
+            {
+                LogVerbose(ex.Message);
+            }
+            catch (Exception ex)
+            {
+                LogVerbose($"Unexpected exception while receiving message packets. {ex.Message}");
+            }
         }
 
         public void Dispose()
