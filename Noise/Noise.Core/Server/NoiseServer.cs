@@ -67,12 +67,13 @@ namespace Noise.Core.Server
             var senderEndpoint = e.PeerEndpoint;
             LogVerbose($"Peer with endpoint: {senderEndpoint} disconnected.");
 
-            if (_peerConfiguration.Preferences.UseEndpointAttemptFilter)
-            {
-                // TODO: A new preference will be introduced to describe how to handle unknown endpoints that has connected to us.
-                if (_peerConfiguration.IsEndpointKnown(senderEndpoint))
-                    _peerConfiguration.SetEndpointAsConnected(senderEndpoint);
-            }
+            bool isEndpointKnown = _peerConfiguration.IsEndpointKnown(senderEndpoint);
+
+            if (_peerConfiguration.Preferences.AcceptUnpromptedConnectionEndpoints && !isEndpointKnown)
+                _peerConfiguration.InsertEndpoint(senderEndpoint);
+
+            if (_peerConfiguration.Preferences.UseEndpointAttemptFilter && isEndpointKnown)
+                _peerConfiguration.SetEndpointAsConnected(senderEndpoint);
         }
 
         private void SignatureReceivedEventHandler(object sender, SignatureReceivedEventArgs e)
