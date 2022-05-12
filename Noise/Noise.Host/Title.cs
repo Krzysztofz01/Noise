@@ -2,8 +2,6 @@
 {
     public class Title
     {
-        public const string Version = "v0.1.3-alpha";
-
         public const string AsciiTitle = @"
                                      :                                   
                  L.                 t#,                 .        ,;      

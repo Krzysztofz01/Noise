@@ -3,7 +3,9 @@
 namespace Noise.Core.Protocol
 {
     public static class Constants
-    {   
+    {
+        public const string Version = "v0.1.3-alpha";
+
         public const Int32 ProtocolPort = 5000;
 
         public const Int32 MaximalPacketSize = 8192;

@@ -2,6 +2,7 @@
 using Noise.Core.Abstraction;
 using Noise.Core.Client;
 using Noise.Core.Peer;
+using Noise.Core.Protocol;
 using System;
 using Xunit;
 
@@ -58,6 +59,6 @@ namespace Noise.Core.Test
         }
 
         private PeerConfiguration MockupPeerConfiguration =>
-            PeerConfiguration.Factory.Initialize(Guid.NewGuid().ToString());
+            PeerConfiguration.Factory.Initialize(Guid.NewGuid().ToString(), Constants.Version);
     }
 }

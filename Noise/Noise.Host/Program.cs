@@ -3,6 +3,7 @@ using Noise.Core.Exceptions;
 using Noise.Core.Extensions;
 using Noise.Core.File;
 using Noise.Core.Peer;
+using Noise.Core.Protocol;
 using Noise.Core.Server;
 using Noise.Host.Abstraction;
 using Noise.Host.Exceptions;
@@ -79,8 +80,8 @@ namespace Noise.Host
             }
             catch (Exception ex)
             {
-                Console.WriteLine("Fatal application failure.");
-                Console.WriteLine(ex.Message);
+                OutputMonitor.LogError("Fatal application failure.");
+                OutputMonitor.LogError(ex.Message);
                 return FAILURE;
             }
         }
@@ -103,20 +104,35 @@ namespace Noise.Host
                 {
                     var peerConfigurationCipher = FileHandler.GetPeerConfigurationCipher();
 
-                    return PeerEncryption.DecryptPeerConfiguration(peerConfigurationCipher, peerPassword) ??
+                    var localPeerConfiguration = PeerEncryption.DecryptPeerConfiguration(peerConfigurationCipher, peerPassword) ??
                         throw new PeerDataException(PeerDataProblemType.WRONG_PEER_SECRET);
+
+                    if (!localPeerConfiguration.IsVersionValid(Constants.Version))
+                        throw new InvalidOperationException($"Version mismatch detected. Peer: {localPeerConfiguration.Version ?? "Version undefined" }. Host: {Constants.Version}. You can enable the unsafe AllowHostVersionMismatch flag to proceed.");
+
+                    if (localPeerConfiguration.Preferences.VerboseMode)
+                    {
+                        OutputMonitor.LogInformation($"Peer version will be updated from { localPeerConfiguration.Version ?? "Version undefined"} to { Constants.Version }");
+                    }
+
+                    localPeerConfiguration.UpdatePeerVersion(Constants.Version);
+
+                    await FileHandler.SavePeerConfigurationCipher(localPeerConfiguration);
+
+                    return localPeerConfiguration;
                 }
 
                 OutputMonitor.LogInformation("No peer file found. New peer created with the provided password.");
-                var initializedPeerConfiguration = PeerConfiguration.Factory.Initialize(peerPassword);
+
+                var initializedPeerConfiguration = PeerConfiguration.Factory.Initialize(peerPassword, Constants.Version);
 
                 await FileHandler.SavePeerConfigurationCipher(initializedPeerConfiguration);
 
                 return initializedPeerConfiguration;
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                OutputMonitor.LogError(ex);
+                //TODO: Handle mistach exception with custom exception. Mismatch exception is not fatal in a different context.
                 throw;
             }
         }
