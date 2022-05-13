@@ -4,6 +4,7 @@ using Noise.Core.Peer;
 using Noise.Core.Protocol;
 using System;
 using System.IO;
+using System.Linq;
 using System.Net;
 using System.Net.Sockets;
 using System.Threading;
@@ -128,9 +129,50 @@ namespace Noise.Core.Client
             }
         }
 
-        public Task SendDiscovery(CancellationToken cancellationToken = default)
+        public async Task SendDiscovery(string receiverPublicKey, CancellationToken cancellationToken = default)
         {
-            throw new NotImplementedException();
+            try
+            {
+                var packetHandlingService = new PacketHandlingService();
+
+                var signature = _peerConfiguration.GetPeerByPublicKey(receiverPublicKey).SendingSignature;
+                if (signature is null)
+                {
+                    LogVerbose("The target peer has not provided any certification. Unable to send the discovery packet. Peer skipped.");
+                    return;
+                }
+
+                var endpoints = _peerConfiguration.GetEndpoints(false).Select(e => e.Endpoint);
+
+                var publicKeys = _peerConfiguration.Preferences.SharePublicKeysViaDiscovery ?
+                    _peerConfiguration.GetPeers().Select(p => p.PublicKey) :
+                    Array.Empty<string>();
+
+                var (keyPacket, discoveryPacket) = packetHandlingService.CreateDiscoveryPackets(signature, receiverPublicKey, endpoints, publicKeys);
+
+                var bufferStream = PacketBufferStreamBuilder
+                    .Create()
+                    .InsertPacket(keyPacket)
+                    .InsertPacket(discoveryPacket)
+                    .Build();
+
+                Connect();
+                await SendAsync(bufferStream, cancellationToken);
+                
+                _outputMonitor.WriteOutgoinDiscovery(_peerIp);
+            }
+            catch (PeerDataException ex)
+            {
+                LogVerbose(ex.Message);
+            }
+            catch (Exception ex)
+            {
+                _outputMonitor.LogError(ex);
+            }
+            finally
+            {
+                Disconnect();
+            }
         }
 
         public async Task SendPing(CancellationToken cancellationToken = default)

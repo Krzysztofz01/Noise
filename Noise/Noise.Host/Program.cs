@@ -46,10 +46,12 @@ namespace Noise.Host
                 using INoiseServer server = new NoiseServer(OutputMonitor, PeerConfiguration, GetNoiseServerConfiguration());
                 _ = Task.Run(async () => await server.StartAsync(cts.Token));
 
-                ((OutputMonitor)OutputMonitor).WriteRaw("Spread the noise...", ConsoleColor.Yellow);
                 OutputMonitor.LogInformation("The Noise peer host started.");
                 Thread.Sleep(_timeOffsetMs);
 
+                await ((CommandHandler)CommandHandler).RunStartupDiscovery(cts);
+
+                ((OutputMonitor)OutputMonitor).WriteRaw("Spread the noise...", ConsoleColor.Yellow);
                 while (!cts.Token.IsCancellationRequested)
                 {
                     try
@@ -110,12 +112,11 @@ namespace Noise.Host
                     if (!localPeerConfiguration.IsVersionValid(Constants.Version))
                         throw new InvalidOperationException($"Version mismatch detected. Peer: {localPeerConfiguration.Version ?? "Version undefined" }. Host: {Constants.Version}. You can enable the unsafe AllowHostVersionMismatch flag to proceed.");
 
-                    if (localPeerConfiguration.Preferences.VerboseMode)
+                    if (Constants.Version != localPeerConfiguration.Version)
                     {
                         OutputMonitor.LogInformation($"Peer version will be updated from { localPeerConfiguration.Version ?? "Version undefined"} to { Constants.Version }");
+                        localPeerConfiguration.UpdatePeerVersion(Constants.Version);
                     }
-
-                    localPeerConfiguration.UpdatePeerVersion(Constants.Version);
 
                     await FileHandler.SavePeerConfigurationCipher(localPeerConfiguration);
 
@@ -132,7 +133,6 @@ namespace Noise.Host
             }
             catch (Exception)
             {
-                //TODO: Handle mistach exception with custom exception. Mismatch exception is not fatal in a different context.
                 throw;
             }
         }

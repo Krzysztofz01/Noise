@@ -55,6 +55,18 @@ namespace Noise.Core.Peer
         [ConfigurablePreference]
         public bool AllowHostVersionMismatch { get; private set; }
 
+        [ConfigurablePreference]
+        public bool BroadcastDiscoveryOnStartup { get; private set; }
+
+        [ConfigurablePreference]
+        public bool SharePublicKeysViaDiscovery { get; private set; }
+
+        [ConfigurablePreference]
+        public bool AcceptPublicKeysViaDiscovery { get; private set; }
+
+        [ConfigurablePreference]
+        public bool AcceptUnpromptedConnectionEndpoints { get; private set; }
+
         public bool ApplyPreference(string name, string value)
         {
             try
@@ -114,7 +126,11 @@ namespace Noise.Core.Peer
                 ClientConnectTimeoutMs = ClientConnectTimeoutMs,
                 ClientReadTimeoutMs = ClientReadTimeoutMs,
                 ClientMaxConnectRetryCount = ClientMaxConnectRetryCount,
-                AllowHostVersionMismatch = AllowHostVersionMismatch
+                AllowHostVersionMismatch = AllowHostVersionMismatch,
+                BroadcastDiscoveryOnStartup = BroadcastDiscoveryOnStartup,
+                SharePublicKeysViaDiscovery = SharePublicKeysViaDiscovery,
+                AcceptPublicKeysViaDiscovery = AcceptPublicKeysViaDiscovery,
+                AcceptUnpromptedConnectionEndpoints = AcceptUnpromptedConnectionEndpoints
             };
         }
 
@@ -140,7 +156,11 @@ namespace Noise.Core.Peer
                     ClientConnectTimeoutMs = 5000,
                     ClientReadTimeoutMs = 1000,
                     ClientMaxConnectRetryCount = 3,
-                    AllowHostVersionMismatch = false
+                    AllowHostVersionMismatch = false,
+                    BroadcastDiscoveryOnStartup = true,
+                    SharePublicKeysViaDiscovery = false,
+                    AcceptPublicKeysViaDiscovery = false,
+                    AcceptUnpromptedConnectionEndpoints = true
                 };
             }
 
@@ -165,7 +185,11 @@ namespace Noise.Core.Peer
                     ClientConnectTimeoutMs = peerPreferences.ClientConnectTimeoutMs ?? defaultPreferences.ClientConnectTimeoutMs,
                     ClientReadTimeoutMs = peerPreferences.ClientReadTimeoutMs ?? defaultPreferences.ClientReadTimeoutMs,
                     ClientMaxConnectRetryCount = peerPreferences.ClientMaxConnectRetryCount ?? defaultPreferences.ClientMaxConnectRetryCount,
-                    AllowHostVersionMismatch = peerPreferences.AllowHostVersionMismatch ?? defaultPreferences.AllowHostVersionMismatch
+                    AllowHostVersionMismatch = peerPreferences.AllowHostVersionMismatch ?? defaultPreferences.AllowHostVersionMismatch,
+                    BroadcastDiscoveryOnStartup = peerPreferences.BroadcastDiscoveryOnStartup ?? defaultPreferences.BroadcastDiscoveryOnStartup,
+                    SharePublicKeysViaDiscovery = peerPreferences.SharePublicKeysViaDiscovery ?? defaultPreferences.SharePublicKeysViaDiscovery,
+                    AcceptPublicKeysViaDiscovery = peerPreferences.AcceptPublicKeysViaDiscovery ?? defaultPreferences.AcceptPublicKeysViaDiscovery,
+                    AcceptUnpromptedConnectionEndpoints = peerPreferences.AcceptUnpromptedConnectionEndpoints ?? defaultPreferences.AcceptUnpromptedConnectionEndpoints
                 };
             }
         }
