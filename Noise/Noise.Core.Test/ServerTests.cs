@@ -1,6 +1,7 @@
 ﻿using Moq;
 using Noise.Core.Abstraction;
 using Noise.Core.Peer;
+using Noise.Core.Protocol;
 using Noise.Core.Server;
 using System;
 using System.Threading;
@@ -62,6 +63,6 @@ namespace Noise.Core.Test
         }
 
         private PeerConfiguration MockupPeerConfiguration =>
-            PeerConfiguration.Factory.Initialize(Guid.NewGuid().ToString());
+            PeerConfiguration.Factory.Initialize(Guid.NewGuid().ToString(), Constants.Version);
     }
 }

@@ -52,6 +52,9 @@ namespace Noise.Core.Peer
         [ConfigurablePreference]
         public int ClientMaxConnectRetryCount { get; private set; }
 
+        [ConfigurablePreference]
+        public bool AllowHostVersionMismatch { get; private set; }
+
         public bool ApplyPreference(string name, string value)
         {
             try
@@ -110,7 +113,8 @@ namespace Noise.Core.Peer
                 ClientStreamBufferSize = ClientStreamBufferSize,
                 ClientConnectTimeoutMs = ClientConnectTimeoutMs,
                 ClientReadTimeoutMs = ClientReadTimeoutMs,
-                ClientMaxConnectRetryCount = ClientMaxConnectRetryCount
+                ClientMaxConnectRetryCount = ClientMaxConnectRetryCount,
+                AllowHostVersionMismatch = AllowHostVersionMismatch
             };
         }
 
@@ -135,7 +139,8 @@ namespace Noise.Core.Peer
                     ClientStreamBufferSize = 16384,
                     ClientConnectTimeoutMs = 5000,
                     ClientReadTimeoutMs = 1000,
-                    ClientMaxConnectRetryCount = 3
+                    ClientMaxConnectRetryCount = 3,
+                    AllowHostVersionMismatch = false
                 };
             }
 
@@ -159,7 +164,8 @@ namespace Noise.Core.Peer
                     ClientStreamBufferSize = peerPreferences.ClientStreamBufferSize ?? defaultPreferences.ClientStreamBufferSize,
                     ClientConnectTimeoutMs = peerPreferences.ClientConnectTimeoutMs ?? defaultPreferences.ClientConnectTimeoutMs,
                     ClientReadTimeoutMs = peerPreferences.ClientReadTimeoutMs ?? defaultPreferences.ClientReadTimeoutMs,
-                    ClientMaxConnectRetryCount = peerPreferences.ClientMaxConnectRetryCount ?? defaultPreferences.ClientMaxConnectRetryCount
+                    ClientMaxConnectRetryCount = peerPreferences.ClientMaxConnectRetryCount ?? defaultPreferences.ClientMaxConnectRetryCount,
+                    AllowHostVersionMismatch = peerPreferences.AllowHostVersionMismatch ?? defaultPreferences.AllowHostVersionMismatch
                 };
             }
         }

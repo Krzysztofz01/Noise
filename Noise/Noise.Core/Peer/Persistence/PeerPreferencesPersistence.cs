@@ -17,5 +17,6 @@
         public int? ClientConnectTimeoutMs { get; set; }
         public int? ClientReadTimeoutMs { get; set; }
         public int? ClientMaxConnectRetryCount { get; set; }
+        public bool? AllowHostVersionMismatch { get; set; }
     }
 }

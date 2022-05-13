@@ -11,6 +11,7 @@ namespace Noise.Core.Exceptions
         public const string _ordinalNumberNotFound = "Peer with given ordinal number not found or is ambiguous.";
         public const string _wrongPeerSecret = "Invalid password for given peer.";
         public const string _undefinedMessage = "Unexpected peer data behavior.";
+        public const string _versionMismatch = "A version unhandled version mismatch detected between peer and host.";
 
         private PeerDataException() { }
         public PeerDataException(PeerDataProblemType peerDataProblemType) : base(MapReasonToMessage(peerDataProblemType)) { }
@@ -25,6 +26,7 @@ namespace Noise.Core.Exceptions
                 PeerDataProblemType.ALIAS_NOT_FOUND => _aliasNotFound,
                 PeerDataProblemType.ORDINAL_NUMER_NOT_FOUND => _ordinalNumberNotFound,
                 PeerDataProblemType.WRONG_PEER_SECRET => _wrongPeerSecret,
+                PeerDataProblemType.VERSION_MISMATCH => _versionMismatch,
                 _ => _undefinedMessage,
             };
         }
@@ -38,5 +40,6 @@ namespace Noise.Core.Exceptions
         ALIAS_NOT_FOUND,
         ORDINAL_NUMER_NOT_FOUND,
         WRONG_PEER_SECRET,
+        VERSION_MISMATCH
     }
 }
