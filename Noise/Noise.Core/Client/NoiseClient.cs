@@ -158,6 +158,8 @@ namespace Noise.Core.Client
 
                 Connect();
                 await SendAsync(bufferStream, cancellationToken);
+                
+                _outputMonitor.WriteOutgoinDiscovery(_peerIp);
             }
             catch (PeerDataException ex)
             {

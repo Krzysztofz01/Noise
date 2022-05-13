@@ -20,6 +20,8 @@ namespace Noise.Core.Abstraction
         void WriteOutgoingSignature(string receiverPublicKey);
         void WriteIncomingPing(string senderEndpoint);
         void WriteOutgoingPing(string receiverEndpoint);
+        void WriteIncomingDiscovery(string senderPublicKey, string senderAlias, string senderEndpoint);
+        void WriteOutgoinDiscovery(string receiverEndpoint);
 
         void WriteRaw(string content, bool newLine = true);
 
