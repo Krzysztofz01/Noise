@@ -17,6 +17,8 @@ namespace Noise.Core.Peer
 
         public PeerSecrets Secrets { get; private set; }
         public PeerPreferences Preferences { get; private set; }
+
+        public string Version { get; private set; }
         
         private int GenerateOrdinalNumberIdentifier()
         {
@@ -158,6 +160,41 @@ namespace Noise.Core.Peer
             return Preferences.ApplyPreference(name, value);
         }
 
+        public bool IsVersionValid(string hostVersion)
+        {
+            if (Preferences.AllowHostVersionMismatch) return true;
+
+            try
+            {
+                var currentVersionArray = Version.Replace('.', '-').Skip(1).Where(x => x != '-');
+                var currentMajor = Convert.ToInt32(currentVersionArray.First().ToString());
+                var currentMinor = Convert.ToInt32(currentVersionArray.Skip(1).First().ToString());
+                var currentPatch = Convert.ToInt32(currentVersionArray.Skip(2).First().ToString());
+
+                var hostVersionArrray = hostVersion.Replace('.', '-').Skip(1).Where(x => x != '-');
+                var hostMajor = Convert.ToInt32(hostVersionArrray.First().ToString());
+                var hostMinor = Convert.ToInt32(hostVersionArrray.Skip(1).First().ToString());
+                var hostPatch = Convert.ToInt32(hostVersionArrray.Skip(2).First().ToString());
+
+                if (hostMajor < currentMajor) return false;
+                if (hostMinor < currentMinor) return false;
+                if (hostPatch < currentPatch) return false;
+                return true;
+            }
+            catch (Exception)
+            {
+                return false;
+            }
+        }
+
+        public void UpdatePeerVersion(string hostVersion)
+        {
+            if (!IsVersionValid(hostVersion))
+                throw new PeerDataException(PeerDataProblemType.VERSION_MISMATCH);
+
+            Version = hostVersion;
+        }
+
         public string Serialize()
         {
             var persistenceConfigurationForm = new PeerConfigurationPersistence
@@ -165,7 +202,8 @@ namespace Noise.Core.Peer
                 PeerEndpoints = _peerEndpoints.Select(e => e.Serialize()),
                 RemotePeers = _remotePeers.Select(e => e.Serialize()),
                 Preferences = Preferences.Serialize(),
-                Secrets = Secrets.Serialize()
+                Secrets = Secrets.Serialize(),
+                Version = Version
             };
 
             return JsonSerializer.Serialize(persistenceConfigurationForm, new JsonSerializerOptions
@@ -201,14 +239,18 @@ namespace Noise.Core.Peer
                     _peerEndpoints = persistenceConfigurationForm.PeerEndpoints.Select(e => PeerEndpoint.Factory.Deserialize(e)).ToList(),
                     _remotePeers = persistenceConfigurationForm.RemotePeers.Select(e => RemotePeer.Factory.Deserialize(e)).ToList(),
                     Secrets = PeerSecrets.Factory.Deserialize(persistenceConfigurationForm.Secrets),
-                    Preferences = PeerPreferences.Factory.Deserialize(persistenceConfigurationForm.Preferences)
+                    Preferences = PeerPreferences.Factory.Deserialize(persistenceConfigurationForm.Preferences),
+                    Version = persistenceConfigurationForm.Version
                 };
             }
 
-            public static PeerConfiguration Initialize(string configurationSecret)
+            public static PeerConfiguration Initialize(string configurationSecret, string version)
             {
                 if (configurationSecret.IsEmpty())
                     throw new ArgumentException("Invalid configuration secret.", nameof(configurationSecret));
+
+                if (version.IsEmpty())
+                    throw new ArgumentException("Invalid host version.", nameof(version));
 
                 var preferences = PeerPreferences.Factory.Initialize();
                 var secrets = PeerSecrets.Factory.FromParameters(configurationSecret);
@@ -216,7 +258,8 @@ namespace Noise.Core.Peer
                 return new PeerConfiguration
                 {
                     Preferences = preferences,
-                    Secrets = secrets
+                    Secrets = secrets,
+                    Version = version
                 };
             }
         }

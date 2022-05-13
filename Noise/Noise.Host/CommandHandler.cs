@@ -1,6 +1,7 @@
 ﻿using Noise.Core.Abstraction;
 using Noise.Core.Client;
 using Noise.Core.Peer;
+using Noise.Core.Protocol;
 using Noise.Host.Abstraction;
 using Noise.Host.Exceptions;
 using System;
@@ -70,8 +71,56 @@ namespace Noise.Host
                 case "HELP": ExecuteHelp(); return;
                 case "SIGN": await ExecuteSign(args, cancellationTokenSource); return;
                 case "INFO": ExecuteInfo(); return;
+                case "DISCOVER": await ExecuteDiscover(cancellationTokenSource); return;
 
                 default: throw new CommandHandlerException("Invalid command. Use the HELP command for further information.");
+            }
+        }
+
+        private async Task ExecuteDiscover(CancellationTokenSource cancellationTokenSource)
+        {
+            try
+            {
+                foreach (var endpoint in _peerConfiguration.GetEndpoints(true))
+                {
+                    foreach (var peer in _peerConfiguration.GetPeers())
+                    {
+                        using var client = CreateClient(endpoint.Endpoint);
+                        await client.SendDiscovery(peer.PublicKey, cancellationTokenSource.Token);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                throw new CommandHandlerException(ex.Message);
+            }
+        }
+
+        public async Task RunStartupDiscovery(CancellationTokenSource cancellationTokenSource)
+        {
+            if (!_peerConfiguration.Preferences.BroadcastDiscoveryOnStartup) return;
+
+            try
+            {
+                _outputMonitor.LogInformation("Endpoint discovery broadcast started.");
+
+                foreach (var endpoint in _peerConfiguration.GetEndpoints(true))
+                {
+                    foreach (var peer in _peerConfiguration.GetPeers())
+                    {
+                        using var client = CreateClient(endpoint.Endpoint);
+                        await client.SendDiscovery(peer.PublicKey, cancellationTokenSource.Token);
+                    }
+                }
+
+                _outputMonitor.LogInformation("Endpoint discovery broadcast finished.");
+            }
+            catch (Exception ex)
+            {
+                _outputMonitor.LogWarning("Enpoint discovery broadcast failed.");
+
+                if (_peerConfiguration.Preferences.VerboseMode)
+                    _outputMonitor.LogError(ex);
             }
         }
 
@@ -350,7 +399,7 @@ namespace Noise.Host
         {
             ((OutputMonitor)_outputMonitor).WriteRaw(Title.AsciiTitle, ConsoleColor.DarkGreen, false);
 
-            ((OutputMonitor)_outputMonitor).WriteRaw($"{Environment.NewLine}{Title.Version}", ConsoleColor.Green);
+            ((OutputMonitor)_outputMonitor).WriteRaw($"{Environment.NewLine}{Constants.Version}", ConsoleColor.Green);
             ((OutputMonitor)_outputMonitor).WriteRaw("https://github.com/Krzysztofz01/Noise", ConsoleColor.Green);
 
             ((OutputMonitor)_outputMonitor).WriteRaw($"{Environment.NewLine}Available commands:", ConsoleColor.DarkYellow);
@@ -368,6 +417,7 @@ namespace Noise.Host
             ((OutputMonitor)_outputMonitor).WriteRaw("INSERT - Insert new peer key and optional alias or a endpoint.", ConsoleColor.Yellow);
             ((OutputMonitor)_outputMonitor).WriteRaw("HELP - Show available commands.", ConsoleColor.Yellow);
             ((OutputMonitor)_outputMonitor).WriteRaw("INFO - Print information about local peer.", ConsoleColor.Yellow);
+            ((OutputMonitor)_outputMonitor).WriteRaw("DISCOVER - Broadcast discovery packets to the network.", ConsoleColor.Yellow);
         }
 
         private void ExecuteClear()

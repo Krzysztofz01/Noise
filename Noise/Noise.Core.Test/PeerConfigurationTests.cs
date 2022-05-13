@@ -246,7 +246,7 @@ namespace Noise.Core.Test
         public void PeerConfigurationShouldEncryptAndDecryptWithCorrectSecret()
         {
             var secret = "Hello World!";
-            var peer = PeerConfiguration.Factory.Initialize(secret);
+            var peer = PeerConfiguration.Factory.Initialize(secret, Constants.Version);
 
             var encryptedPeerConfiguration = PeerEncryption.EncryptPeerConfiguration(peer);
 
@@ -260,7 +260,7 @@ namespace Noise.Core.Test
         public void PeerConfigurationShouldEncryptAndNotDecryptWithIncorrectSecret()
         {
             var secret = "Hello World!";
-            var peer = PeerConfiguration.Factory.Initialize(secret);
+            var peer = PeerConfiguration.Factory.Initialize(secret, Constants.Version);
 
             var encryptedPeerConfiguration = PeerEncryption.EncryptPeerConfiguration(peer);
 
@@ -340,7 +340,7 @@ namespace Noise.Core.Test
 
         public PeerConfiguration MockUpPeerConfiguration()
         {
-            return PeerConfiguration.Factory.Initialize("Hello World!");
+            return PeerConfiguration.Factory.Initialize("Hello World!", Constants.Version);
         }
 
         public string MockUpPeerSignature()

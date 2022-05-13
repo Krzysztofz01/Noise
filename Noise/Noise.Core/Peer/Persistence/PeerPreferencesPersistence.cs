@@ -17,5 +17,10 @@
         public int? ClientConnectTimeoutMs { get; set; }
         public int? ClientReadTimeoutMs { get; set; }
         public int? ClientMaxConnectRetryCount { get; set; }
+        public bool? AllowHostVersionMismatch { get; set; }
+        public bool? BroadcastDiscoveryOnStartup { get; set; }
+        public bool? SharePublicKeysViaDiscovery { get; set; }
+        public bool? AcceptPublicKeysViaDiscovery { get; set; }
+        public bool? AcceptUnpromptedConnectionEndpoints { get; set; }
     }
 }

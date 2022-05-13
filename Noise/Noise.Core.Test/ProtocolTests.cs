@@ -413,7 +413,7 @@ namespace Noise.Core.Test
 
         public PeerConfiguration MockupPeerConfiguration()
         {
-            return PeerConfiguration.Factory.Initialize("Hello World!");
+            return PeerConfiguration.Factory.Initialize("Hello World!", Constants.Version);
         }
     }
 }

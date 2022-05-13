@@ -3,6 +3,7 @@ using Noise.Core.Exceptions;
 using Noise.Core.Extensions;
 using Noise.Core.File;
 using Noise.Core.Peer;
+using Noise.Core.Protocol;
 using Noise.Core.Server;
 using Noise.Host.Abstraction;
 using Noise.Host.Exceptions;
@@ -45,10 +46,12 @@ namespace Noise.Host
                 using INoiseServer server = new NoiseServer(OutputMonitor, PeerConfiguration, GetNoiseServerConfiguration());
                 _ = Task.Run(async () => await server.StartAsync(cts.Token));
 
-                ((OutputMonitor)OutputMonitor).WriteRaw("Spread the noise...", ConsoleColor.Yellow);
                 OutputMonitor.LogInformation("The Noise peer host started.");
                 Thread.Sleep(_timeOffsetMs);
 
+                await ((CommandHandler)CommandHandler).RunStartupDiscovery(cts);
+
+                ((OutputMonitor)OutputMonitor).WriteRaw("Spread the noise...", ConsoleColor.Yellow);
                 while (!cts.Token.IsCancellationRequested)
                 {
                     try
@@ -79,8 +82,8 @@ namespace Noise.Host
             }
             catch (Exception ex)
             {
-                Console.WriteLine("Fatal application failure.");
-                Console.WriteLine(ex.Message);
+                OutputMonitor.LogError("Fatal application failure.");
+                OutputMonitor.LogError(ex.Message);
                 return FAILURE;
             }
         }
@@ -103,20 +106,33 @@ namespace Noise.Host
                 {
                     var peerConfigurationCipher = FileHandler.GetPeerConfigurationCipher();
 
-                    return PeerEncryption.DecryptPeerConfiguration(peerConfigurationCipher, peerPassword) ??
+                    var localPeerConfiguration = PeerEncryption.DecryptPeerConfiguration(peerConfigurationCipher, peerPassword) ??
                         throw new PeerDataException(PeerDataProblemType.WRONG_PEER_SECRET);
+
+                    if (!localPeerConfiguration.IsVersionValid(Constants.Version))
+                        throw new InvalidOperationException($"Version mismatch detected. Peer: {localPeerConfiguration.Version ?? "Version undefined" }. Host: {Constants.Version}. You can enable the unsafe AllowHostVersionMismatch flag to proceed.");
+
+                    if (Constants.Version != localPeerConfiguration.Version)
+                    {
+                        OutputMonitor.LogInformation($"Peer version will be updated from { localPeerConfiguration.Version ?? "Version undefined"} to { Constants.Version }");
+                        localPeerConfiguration.UpdatePeerVersion(Constants.Version);
+                    }
+
+                    await FileHandler.SavePeerConfigurationCipher(localPeerConfiguration);
+
+                    return localPeerConfiguration;
                 }
 
                 OutputMonitor.LogInformation("No peer file found. New peer created with the provided password.");
-                var initializedPeerConfiguration = PeerConfiguration.Factory.Initialize(peerPassword);
+
+                var initializedPeerConfiguration = PeerConfiguration.Factory.Initialize(peerPassword, Constants.Version);
 
                 await FileHandler.SavePeerConfigurationCipher(initializedPeerConfiguration);
 
                 return initializedPeerConfiguration;
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                OutputMonitor.LogError(ex);
                 throw;
             }
         }

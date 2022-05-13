@@ -13,6 +13,7 @@ namespace Noise.Host
         private const ConsoleColor _messageColor = ConsoleColor.Green;
         private const ConsoleColor _pingColor = ConsoleColor.DarkGreen;
         private const ConsoleColor _signatureColor = ConsoleColor.DarkGreen;
+        private const ConsoleColor _discoveryColor = ConsoleColor.DarkGreen;
 
         public void LogError(string message)
         {
@@ -153,6 +154,26 @@ namespace Noise.Host
         public void Clear()
         {
             Console.Clear();
+        }
+
+        public void WriteIncomingDiscovery(string senderPublicKey, string senderAlias, string senderEndpoint)
+        {
+            string displayName = senderAlias.IsEmpty() || senderAlias == "Anonymous"
+                ? senderPublicKey[.._publicKeyStripLength]
+                : senderAlias;
+
+            Console.ForegroundColor = _discoveryColor;
+            Console.WriteLine("(Discovery!@{0}): Discovery received!//{1}",
+                displayName,
+                senderEndpoint);
+            Console.ResetColor();
+        }
+
+        public void WriteOutgoinDiscovery(string receiverEndpoint)
+        {
+            Console.ForegroundColor = _discoveryColor;
+            Console.WriteLine("(Discovery!@You): Discovery target: {0}//127.0.0.1", receiverEndpoint);
+            Console.ResetColor();
         }
     }
 }
