@@ -18,8 +18,9 @@ namespace Noise.Core.Client
         private readonly PeerConfiguration _peerConfiguration;
         private readonly NoiseClientConfiguration _noiseClientConfiguration;
 
+        private readonly IPacketHandlingService _packetHandlingService;
+
         private readonly string _peerIp = null;
-        private readonly IPAddress _ipAddress = null;
         private TcpClient _tcpClient = null;
         private NetworkStream _networkStream = null;
 
@@ -44,16 +45,15 @@ namespace Noise.Core.Client
             if (!IPAddress.TryParse(endpoint, out var parsedEndpoint))
                 throw new ArgumentException("Invalid endpoint provided.", nameof(endpoint));
 
-            _ipAddress = parsedEndpoint;
             _peerIp = parsedEndpoint.ToString();
+
+            _packetHandlingService = new PacketHandlingService();
         }
 
         public async Task SendMessage(string receiverPublicKey, string message, CancellationToken cancellationToken = default)
         {
             try
             {
-                var packetHandlingService = new PacketHandlingService();
-
                 var signature = _peerConfiguration.GetPeerByPublicKey(receiverPublicKey).SendingSignature;
                 if (signature is null)
                 {
@@ -61,7 +61,7 @@ namespace Noise.Core.Client
                     return;
                 }
 
-                var (keyPacket, messagePacket) = packetHandlingService.CreateMessagePackets(signature, receiverPublicKey, message);
+                var (keyPacket, messagePacket) = _packetHandlingService.CreateMessagePackets(signature, receiverPublicKey, message);
 
                 var bufferStream = PacketBufferStreamBuilder
                     .Create()
@@ -92,11 +92,9 @@ namespace Noise.Core.Client
         {
             try
             {
-                var packetHandlingService = new PacketHandlingService();
-
                 var certification = _peerConfiguration.Preferences.IndependentMediumCertification ?? null;
 
-                var (keyPacket, signaturePacket, receiverIdentityProve) = packetHandlingService.CreateSignaturePacket(
+                var (keyPacket, signaturePacket, receiverIdentityProve) = _packetHandlingService.CreateSignaturePacket(
                     receiverPublicKey,
                     _peerConfiguration.Secrets.PublicKey,
                     _peerConfiguration.Secrets.PrivateKey,
@@ -133,8 +131,6 @@ namespace Noise.Core.Client
         {
             try
             {
-                var packetHandlingService = new PacketHandlingService();
-
                 var signature = _peerConfiguration.GetPeerByPublicKey(receiverPublicKey).SendingSignature;
                 if (signature is null)
                 {
@@ -148,7 +144,7 @@ namespace Noise.Core.Client
                     _peerConfiguration.GetPeers().Select(p => p.PublicKey) :
                     Array.Empty<string>();
 
-                var (keyPacket, discoveryPacket) = packetHandlingService.CreateDiscoveryPackets(signature, receiverPublicKey, endpoints, publicKeys);
+                var (keyPacket, discoveryPacket) = _packetHandlingService.CreateDiscoveryPackets(signature, receiverPublicKey, endpoints, publicKeys);
 
                 var bufferStream = PacketBufferStreamBuilder
                     .Create()
@@ -179,9 +175,7 @@ namespace Noise.Core.Client
         {
             try
             {
-                var packetHandlingService = new PacketHandlingService();
-
-                var pingPacket = packetHandlingService.CreatePingPacket();
+                var pingPacket = _packetHandlingService.CreatePingPacket();
 
                 var pingPacketBuffer = pingPacket.GetBytes();
 
