@@ -61,5 +61,12 @@ namespace Noise.Core.Server
                 _keepAliveRetryCount = value;
             }
         }
+
+        private bool _enableNatTraversal = false;
+        public bool EnableNatTraversal
+        {
+            get => _enableNatTraversal;
+            set => _enableNatTraversal = value;
+        }
     }
 }
