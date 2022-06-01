@@ -59,9 +59,7 @@ The application was developed using the open-source .NET Core technology. It has
 ## Roadmap
 Functionalities that need to be implemented or repaired:
 
-🔲 Migration from .NET5 to .NET6 LTS.
-
-🔲 Reworked discovery system.
+🔲 Advanced networking. UPnP support, NAT traversal/hole-punching
 
 🔲 Relay mode for host.
 
