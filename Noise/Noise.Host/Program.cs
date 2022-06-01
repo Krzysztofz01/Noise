@@ -146,7 +146,8 @@ namespace Noise.Host
                 EnableKeepAlive = PeerConfiguration.Preferences.ServerEnableKeepAlive,
                 KeepAliveInterval = PeerConfiguration.Preferences.ServerKeepAliveInterval,
                 KeepAliveTime = PeerConfiguration.Preferences.ServerKeepAliveTime,
-                KeepAliveRetryCount = PeerConfiguration.Preferences.ServerKeepAliveRetryCount
+                KeepAliveRetryCount = PeerConfiguration.Preferences.ServerKeepAliveRetryCount,
+                EnableNatTraversal = PeerConfiguration.Preferences.EnableWindowsSpecificNatTraversal
             };
         }
     }

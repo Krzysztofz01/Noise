@@ -548,6 +548,14 @@ namespace Noise.Core.Server
                     _tcpListener.Server.SetSocketOption(SocketOptionLevel.Tcp, SocketOptionName.TcpKeepAliveInterval, _noiseServerConfiguration.KeepAliveInterval);
                     _tcpListener.Server.SetSocketOption(SocketOptionLevel.Tcp, SocketOptionName.TcpKeepAliveRetryCount, _noiseServerConfiguration.KeepAliveRetryCount);
                 }
+
+                if (OperatingSystem.IsWindows())
+                {
+                    if (_noiseServerConfiguration.EnableNatTraversal)
+                        LogVerbose("Appling Windows system specific setting: EnableNatTraversal");
+
+                    _tcpListener.AllowNatTraversal(_noiseServerConfiguration.EnableNatTraversal);
+                }
             }
             catch (Exception ex)
             {

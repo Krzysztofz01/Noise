@@ -22,5 +22,6 @@
         public bool? SharePublicKeysViaDiscovery { get; set; }
         public bool? AcceptPublicKeysViaDiscovery { get; set; }
         public bool? AcceptUnpromptedConnectionEndpoints { get; set; }
+        public bool? EnableWindowsSpecificNatTraversal { get; set; }
     }
 }

@@ -69,6 +69,10 @@ namespace Noise.Core.Peer
         [ConfigurablePreference]
         public bool AcceptUnpromptedConnectionEndpoints { get; private set; }
 
+        [Dangerous]
+        [ConfigurablePreference]
+        public bool EnableWindowsSpecificNatTraversal { get; private set; }
+
         public bool ApplyPreference(string name, string value)
         {
             try
@@ -141,7 +145,8 @@ namespace Noise.Core.Peer
                 BroadcastDiscoveryOnStartup = BroadcastDiscoveryOnStartup,
                 SharePublicKeysViaDiscovery = SharePublicKeysViaDiscovery,
                 AcceptPublicKeysViaDiscovery = AcceptPublicKeysViaDiscovery,
-                AcceptUnpromptedConnectionEndpoints = AcceptUnpromptedConnectionEndpoints
+                AcceptUnpromptedConnectionEndpoints = AcceptUnpromptedConnectionEndpoints,
+                EnableWindowsSpecificNatTraversal = EnableWindowsSpecificNatTraversal
             };
         }
 
@@ -171,7 +176,8 @@ namespace Noise.Core.Peer
                     BroadcastDiscoveryOnStartup = true,
                     SharePublicKeysViaDiscovery = false,
                     AcceptPublicKeysViaDiscovery = false,
-                    AcceptUnpromptedConnectionEndpoints = true
+                    AcceptUnpromptedConnectionEndpoints = true,
+                    EnableWindowsSpecificNatTraversal = false
                 };
             }
 
@@ -200,7 +206,8 @@ namespace Noise.Core.Peer
                     BroadcastDiscoveryOnStartup = peerPreferences.BroadcastDiscoveryOnStartup ?? defaultPreferences.BroadcastDiscoveryOnStartup,
                     SharePublicKeysViaDiscovery = peerPreferences.SharePublicKeysViaDiscovery ?? defaultPreferences.SharePublicKeysViaDiscovery,
                     AcceptPublicKeysViaDiscovery = peerPreferences.AcceptPublicKeysViaDiscovery ?? defaultPreferences.AcceptPublicKeysViaDiscovery,
-                    AcceptUnpromptedConnectionEndpoints = peerPreferences.AcceptUnpromptedConnectionEndpoints ?? defaultPreferences.AcceptUnpromptedConnectionEndpoints
+                    AcceptUnpromptedConnectionEndpoints = peerPreferences.AcceptUnpromptedConnectionEndpoints ?? defaultPreferences.AcceptUnpromptedConnectionEndpoints,
+                    EnableWindowsSpecificNatTraversal = peerPreferences.EnableWindowsSpecificNatTraversal ?? defaultPreferences.EnableWindowsSpecificNatTraversal
                 };
             }
         }
