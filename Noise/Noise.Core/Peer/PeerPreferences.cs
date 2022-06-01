@@ -69,6 +69,7 @@ namespace Noise.Core.Peer
         [ConfigurablePreference]
         public bool AcceptUnpromptedConnectionEndpoints { get; private set; }
 
+        [Dangerous]
         [ConfigurablePreference]
         public bool EnableWindowsSpecificNatTraversal { get; private set; }
 
