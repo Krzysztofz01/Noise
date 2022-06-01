@@ -190,6 +190,9 @@ namespace Noise.Host
                 if (!_peerConfiguration.ApplyPreference(property, value))
                     throw new CommandHandlerException($"Failed to apply: {value} to: {property} option.");
 
+                if (PeerPreferences.IsDangerous(property))
+                    _outputMonitor.LogWarning($"Changing the option: {property} is dangerous and is not recommended.");
+
                 ((OutputMonitor)_outputMonitor).WriteRaw($"Successful applied: {value} to: {property} option.", ConsoleColor.Green);
             }
             catch (Exception ex)
