@@ -21,7 +21,6 @@ namespace Noise.Core.Client
         private readonly IPacketHandlingService _packetHandlingService;
 
         private readonly string _peerIp = null;
-        private readonly IPAddress _ipAddress = null;
         private TcpClient _tcpClient = null;
         private NetworkStream _networkStream = null;
 
@@ -46,7 +45,6 @@ namespace Noise.Core.Client
             if (!IPAddress.TryParse(endpoint, out var parsedEndpoint))
                 throw new ArgumentException("Invalid endpoint provided.", nameof(endpoint));
 
-            _ipAddress = parsedEndpoint;
             _peerIp = parsedEndpoint.ToString();
 
             _packetHandlingService = new PacketHandlingService();
