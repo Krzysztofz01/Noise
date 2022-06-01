@@ -52,6 +52,7 @@ namespace Noise.Core.Peer
         [ConfigurablePreference]
         public int ClientMaxConnectRetryCount { get; private set; }
 
+        [Dangerous]
         [ConfigurablePreference]
         public bool AllowHostVersionMismatch { get; private set; }
 
@@ -64,6 +65,7 @@ namespace Noise.Core.Peer
         [ConfigurablePreference]
         public bool AcceptPublicKeysViaDiscovery { get; private set; }
 
+        [Dangerous]
         [ConfigurablePreference]
         public bool AcceptUnpromptedConnectionEndpoints { get; private set; }
 
@@ -100,6 +102,15 @@ namespace Noise.Core.Peer
             {
                 return false;
             }
+        }
+
+        public static bool IsDangerous(string name)
+        {
+            return typeof(PeerPreferences)
+               .GetProperties()
+               .Where(p => p.CustomAttributes.Any(a => a.AttributeType == typeof(ConfigurablePreferenceAttribute)))
+               .Where(p => p.CustomAttributes.Any(a => a.AttributeType == typeof(DangerousAttribute)))
+               .Any(p => p.Name.ToLower() == name.ToLower());
         }
 
         public IDictionary<string, string> GetPreferences()
@@ -203,4 +214,7 @@ namespace Noise.Core.Peer
 
     [AttributeUsage(AttributeTargets.Property)]
     internal class ConfigurablePreferenceAttribute : Attribute { }
+
+    [AttributeUsage(AttributeTargets.Property)]
+    internal class DangerousAttribute : Attribute { }
 }
