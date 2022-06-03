@@ -23,5 +23,6 @@
         public bool? AcceptPublicKeysViaDiscovery { get; set; }
         public bool? AcceptUnpromptedConnectionEndpoints { get; set; }
         public bool? EnableWindowsSpecificNatTraversal { get; set; }
+        public bool? ForceUpdate { get; set; }
     }
 }
