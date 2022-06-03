@@ -73,6 +73,10 @@ namespace Noise.Core.Peer
         [ConfigurablePreference]
         public bool EnableWindowsSpecificNatTraversal { get; private set; }
 
+        [Dangerous]
+        [ConfigurablePreference]
+        public bool ForceUpdate { get; private set; }
+
         public bool ApplyPreference(string name, string value)
         {
             try
@@ -146,7 +150,8 @@ namespace Noise.Core.Peer
                 SharePublicKeysViaDiscovery = SharePublicKeysViaDiscovery,
                 AcceptPublicKeysViaDiscovery = AcceptPublicKeysViaDiscovery,
                 AcceptUnpromptedConnectionEndpoints = AcceptUnpromptedConnectionEndpoints,
-                EnableWindowsSpecificNatTraversal = EnableWindowsSpecificNatTraversal
+                EnableWindowsSpecificNatTraversal = EnableWindowsSpecificNatTraversal,
+                ForceUpdate = ForceUpdate
             };
         }
 
@@ -177,7 +182,8 @@ namespace Noise.Core.Peer
                     SharePublicKeysViaDiscovery = false,
                     AcceptPublicKeysViaDiscovery = false,
                     AcceptUnpromptedConnectionEndpoints = true,
-                    EnableWindowsSpecificNatTraversal = false
+                    EnableWindowsSpecificNatTraversal = false,
+                    ForceUpdate = false
                 };
             }
 
@@ -207,7 +213,8 @@ namespace Noise.Core.Peer
                     SharePublicKeysViaDiscovery = peerPreferences.SharePublicKeysViaDiscovery ?? defaultPreferences.SharePublicKeysViaDiscovery,
                     AcceptPublicKeysViaDiscovery = peerPreferences.AcceptPublicKeysViaDiscovery ?? defaultPreferences.AcceptPublicKeysViaDiscovery,
                     AcceptUnpromptedConnectionEndpoints = peerPreferences.AcceptUnpromptedConnectionEndpoints ?? defaultPreferences.AcceptUnpromptedConnectionEndpoints,
-                    EnableWindowsSpecificNatTraversal = peerPreferences.EnableWindowsSpecificNatTraversal ?? defaultPreferences.EnableWindowsSpecificNatTraversal
+                    EnableWindowsSpecificNatTraversal = peerPreferences.EnableWindowsSpecificNatTraversal ?? defaultPreferences.EnableWindowsSpecificNatTraversal,
+                    ForceUpdate = peerPreferences.ForceUpdate ?? defaultPreferences.ForceUpdate
                 };
             }
         }
