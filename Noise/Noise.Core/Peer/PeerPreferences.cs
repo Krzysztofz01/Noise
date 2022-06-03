@@ -81,6 +81,10 @@ namespace Noise.Core.Peer
         [ConfigurablePreference]
         public int PeriodicallyDiscoveryIntervalMinutes { get; private set; }
 
+        [Dangerous]
+        [ConfigurablePreference]
+        public bool ForceUpdate { get; private set; }
+
         public bool ApplyPreference(string name, string value)
         {
             try
@@ -156,7 +160,8 @@ namespace Noise.Core.Peer
                 AcceptUnpromptedConnectionEndpoints = AcceptUnpromptedConnectionEndpoints,
                 EnableWindowsSpecificNatTraversal = EnableWindowsSpecificNatTraversal,
                 BroadcastDiscoveryPeriodically = BroadcastDiscoveryPeriodically,
-                PeriodicallyDiscoveryIntervalMinutes = PeriodicallyDiscoveryIntervalMinutes
+                PeriodicallyDiscoveryIntervalMinutes = PeriodicallyDiscoveryIntervalMinutes,
+                ForceUpdate = ForceUpdate
             };
         }
 
@@ -189,7 +194,8 @@ namespace Noise.Core.Peer
                     AcceptUnpromptedConnectionEndpoints = true,
                     EnableWindowsSpecificNatTraversal = false,
                     BroadcastDiscoveryPeriodically = true,
-                    PeriodicallyDiscoveryIntervalMinutes = 10
+                    PeriodicallyDiscoveryIntervalMinutes = 10,
+                    ForceUpdate = false
                 };
             }
 
@@ -222,6 +228,7 @@ namespace Noise.Core.Peer
                     EnableWindowsSpecificNatTraversal = peerPreferences.EnableWindowsSpecificNatTraversal ?? defaultPreferences.EnableWindowsSpecificNatTraversal,
                     BroadcastDiscoveryPeriodically = peerPreferences.BroadcastDiscoveryPeriodically ?? defaultPreferences.BroadcastDiscoveryPeriodically,
                     PeriodicallyDiscoveryIntervalMinutes = peerPreferences.PeriodicallyDiscoveryIntervalMinutes ?? defaultPreferences.PeriodicallyDiscoveryIntervalMinutes
+                    ForceUpdate = peerPreferences.ForceUpdate ?? defaultPreferences.ForceUpdate
                 };
             }
         }

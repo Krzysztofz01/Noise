@@ -113,8 +113,11 @@ namespace Noise.Host
                     if (!localPeerConfiguration.IsVersionValid(Constants.Version))
                         throw new InvalidOperationException($"Version mismatch detected. Peer: {localPeerConfiguration.Version ?? "Version undefined" }. Host: {Constants.Version}. You can enable the unsafe AllowHostVersionMismatch flag to proceed.");
 
-                    if (Constants.Version != localPeerConfiguration.Version)
+                    if (Constants.Version != localPeerConfiguration.Version || localPeerConfiguration.Preferences.ForceUpdate)
                     {
+                        if (localPeerConfiguration.Preferences.ForceUpdate)
+                            OutputMonitor.LogInformation("Perfmorming a forced update of the peer configuration.");
+
                         OutputMonitor.LogInformation($"Peer version will be updated from { localPeerConfiguration.Version ?? "Version undefined"} to { Constants.Version }");
                         localPeerConfiguration.UpdatePeerVersion(Constants.Version);
                     }
