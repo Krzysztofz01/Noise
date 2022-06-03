@@ -25,6 +25,7 @@ namespace Noise.Core.Peer
         [ConfigurablePreference]
         public bool FixedPublicKeyValidationLength { get; private set; }
 
+        [Dangerous]
         [ConfigurablePreference]
         public int ServerStreamBufferSize { get; private set; }
 
@@ -72,6 +73,13 @@ namespace Noise.Core.Peer
         [Dangerous]
         [ConfigurablePreference]
         public bool EnableWindowsSpecificNatTraversal { get; private set; }
+
+        [ConfigurablePreference]
+        public bool BroadcastDiscoveryPeriodically { get; private set; }
+
+        [Dangerous]
+        [ConfigurablePreference]
+        public int PeriodicallyDiscoveryIntervalMinutes { get; private set; }
 
         [Dangerous]
         [ConfigurablePreference]
@@ -151,6 +159,8 @@ namespace Noise.Core.Peer
                 AcceptPublicKeysViaDiscovery = AcceptPublicKeysViaDiscovery,
                 AcceptUnpromptedConnectionEndpoints = AcceptUnpromptedConnectionEndpoints,
                 EnableWindowsSpecificNatTraversal = EnableWindowsSpecificNatTraversal,
+                BroadcastDiscoveryPeriodically = BroadcastDiscoveryPeriodically,
+                PeriodicallyDiscoveryIntervalMinutes = PeriodicallyDiscoveryIntervalMinutes,
                 ForceUpdate = ForceUpdate
             };
         }
@@ -183,6 +193,8 @@ namespace Noise.Core.Peer
                     AcceptPublicKeysViaDiscovery = false,
                     AcceptUnpromptedConnectionEndpoints = true,
                     EnableWindowsSpecificNatTraversal = false,
+                    BroadcastDiscoveryPeriodically = true,
+                    PeriodicallyDiscoveryIntervalMinutes = 10,
                     ForceUpdate = false
                 };
             }
@@ -214,6 +226,8 @@ namespace Noise.Core.Peer
                     AcceptPublicKeysViaDiscovery = peerPreferences.AcceptPublicKeysViaDiscovery ?? defaultPreferences.AcceptPublicKeysViaDiscovery,
                     AcceptUnpromptedConnectionEndpoints = peerPreferences.AcceptUnpromptedConnectionEndpoints ?? defaultPreferences.AcceptUnpromptedConnectionEndpoints,
                     EnableWindowsSpecificNatTraversal = peerPreferences.EnableWindowsSpecificNatTraversal ?? defaultPreferences.EnableWindowsSpecificNatTraversal,
+                    BroadcastDiscoveryPeriodically = peerPreferences.BroadcastDiscoveryPeriodically ?? defaultPreferences.BroadcastDiscoveryPeriodically,
+                    PeriodicallyDiscoveryIntervalMinutes = peerPreferences.PeriodicallyDiscoveryIntervalMinutes ?? defaultPreferences.PeriodicallyDiscoveryIntervalMinutes,
                     ForceUpdate = peerPreferences.ForceUpdate ?? defaultPreferences.ForceUpdate
                 };
             }

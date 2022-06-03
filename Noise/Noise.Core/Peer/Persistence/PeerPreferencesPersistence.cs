@@ -23,6 +23,8 @@
         public bool? AcceptPublicKeysViaDiscovery { get; set; }
         public bool? AcceptUnpromptedConnectionEndpoints { get; set; }
         public bool? EnableWindowsSpecificNatTraversal { get; set; }
+        public bool? BroadcastDiscoveryPeriodically { get; set; }
+        public int? PeriodicallyDiscoveryIntervalMinutes { get; set; }
         public bool? ForceUpdate { get; set; }
     }
 }
