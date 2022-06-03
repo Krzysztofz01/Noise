@@ -25,6 +25,7 @@ namespace Noise.Core.Peer
         [ConfigurablePreference]
         public bool FixedPublicKeyValidationLength { get; private set; }
 
+        [Dangerous]
         [ConfigurablePreference]
         public int ServerStreamBufferSize { get; private set; }
 
@@ -72,6 +73,13 @@ namespace Noise.Core.Peer
         [Dangerous]
         [ConfigurablePreference]
         public bool EnableWindowsSpecificNatTraversal { get; private set; }
+
+        [ConfigurablePreference]
+        public bool BroadcastDiscoveryPeriodically { get; private set; }
+
+        [Dangerous]
+        [ConfigurablePreference]
+        public int PeriodicallyDiscoveryIntervalMinutes { get; private set; }
 
         public bool ApplyPreference(string name, string value)
         {
@@ -146,7 +154,9 @@ namespace Noise.Core.Peer
                 SharePublicKeysViaDiscovery = SharePublicKeysViaDiscovery,
                 AcceptPublicKeysViaDiscovery = AcceptPublicKeysViaDiscovery,
                 AcceptUnpromptedConnectionEndpoints = AcceptUnpromptedConnectionEndpoints,
-                EnableWindowsSpecificNatTraversal = EnableWindowsSpecificNatTraversal
+                EnableWindowsSpecificNatTraversal = EnableWindowsSpecificNatTraversal,
+                BroadcastDiscoveryPeriodically = BroadcastDiscoveryPeriodically,
+                PeriodicallyDiscoveryIntervalMinutes = PeriodicallyDiscoveryIntervalMinutes
             };
         }
 
@@ -177,7 +187,9 @@ namespace Noise.Core.Peer
                     SharePublicKeysViaDiscovery = false,
                     AcceptPublicKeysViaDiscovery = false,
                     AcceptUnpromptedConnectionEndpoints = true,
-                    EnableWindowsSpecificNatTraversal = false
+                    EnableWindowsSpecificNatTraversal = false,
+                    BroadcastDiscoveryPeriodically = true,
+                    PeriodicallyDiscoveryIntervalMinutes = 10
                 };
             }
 
@@ -207,7 +219,9 @@ namespace Noise.Core.Peer
                     SharePublicKeysViaDiscovery = peerPreferences.SharePublicKeysViaDiscovery ?? defaultPreferences.SharePublicKeysViaDiscovery,
                     AcceptPublicKeysViaDiscovery = peerPreferences.AcceptPublicKeysViaDiscovery ?? defaultPreferences.AcceptPublicKeysViaDiscovery,
                     AcceptUnpromptedConnectionEndpoints = peerPreferences.AcceptUnpromptedConnectionEndpoints ?? defaultPreferences.AcceptUnpromptedConnectionEndpoints,
-                    EnableWindowsSpecificNatTraversal = peerPreferences.EnableWindowsSpecificNatTraversal ?? defaultPreferences.EnableWindowsSpecificNatTraversal
+                    EnableWindowsSpecificNatTraversal = peerPreferences.EnableWindowsSpecificNatTraversal ?? defaultPreferences.EnableWindowsSpecificNatTraversal,
+                    BroadcastDiscoveryPeriodically = peerPreferences.BroadcastDiscoveryPeriodically ?? defaultPreferences.BroadcastDiscoveryPeriodically,
+                    PeriodicallyDiscoveryIntervalMinutes = peerPreferences.PeriodicallyDiscoveryIntervalMinutes ?? defaultPreferences.PeriodicallyDiscoveryIntervalMinutes
                 };
             }
         }
