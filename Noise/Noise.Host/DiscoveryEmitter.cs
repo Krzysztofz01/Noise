@@ -38,6 +38,10 @@ namespace Noise.Host
                 while (await timer.WaitForNextTickAsync(cancellationToken))
                     await PerformDiscovery(cancellationToken);
             }
+            catch (OperationCanceledException)
+            {
+                LogVerbose("Discovery emitter thread task canceled.");
+            }
             catch (Exception ex)
             {
                 _outputMonitor.LogError(ex);
@@ -50,6 +54,8 @@ namespace Noise.Host
 
         private async Task PerformDiscovery(CancellationToken cancellationToken)
         {
+            LogVerbose("Discovery broadcast performance started.");
+
             foreach (var endpoint in _peerConfiguration.GetEndpoints(true))
             {
                 LogVerbose($"Emitting discovery packets for: {endpoint.Endpoint}.");
@@ -70,6 +76,8 @@ namespace Noise.Host
                     await client.SendDiscovery(peer.PublicKey, cancellationToken);
                 }
             }
+
+            LogVerbose("Discovery broadcast performance finished.");
         }
 
         private void LogVerbose(string message)
