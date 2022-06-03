@@ -96,34 +96,6 @@ namespace Noise.Host
             }
         }
 
-        public async Task RunStartupDiscovery(CancellationTokenSource cancellationTokenSource)
-        {
-            if (!_peerConfiguration.Preferences.BroadcastDiscoveryOnStartup) return;
-
-            try
-            {
-                _outputMonitor.LogInformation("Endpoint discovery broadcast started.");
-
-                foreach (var endpoint in _peerConfiguration.GetEndpoints(true))
-                {
-                    foreach (var peer in _peerConfiguration.GetPeers())
-                    {
-                        using var client = CreateClient(endpoint.Endpoint);
-                        await client.SendDiscovery(peer.PublicKey, cancellationTokenSource.Token);
-                    }
-                }
-
-                _outputMonitor.LogInformation("Endpoint discovery broadcast finished.");
-            }
-            catch (Exception ex)
-            {
-                _outputMonitor.LogWarning("Enpoint discovery broadcast failed.");
-
-                if (_peerConfiguration.Preferences.VerboseMode)
-                    _outputMonitor.LogError(ex);
-            }
-        }
-
         private void ExecuteBleach()
         {
             try

@@ -49,7 +49,8 @@ namespace Noise.Host
                 OutputMonitor.LogInformation("The Noise peer host started.");
                 Thread.Sleep(_timeOffsetMs);
 
-                await ((CommandHandler)CommandHandler).RunStartupDiscovery(cts);
+                var discoveryEmitter = new DiscoveryEmitter(PeerConfiguration, OutputMonitor);
+                _ = Task.Run(async () => await discoveryEmitter.Start(cts.Token));
 
                 ((OutputMonitor)OutputMonitor).WriteRaw("Spread the noise...", ConsoleColor.Yellow);
                 while (!cts.Token.IsCancellationRequested)
