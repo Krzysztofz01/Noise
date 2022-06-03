@@ -227,7 +227,7 @@ namespace Noise.Core.Peer
                     AcceptUnpromptedConnectionEndpoints = peerPreferences.AcceptUnpromptedConnectionEndpoints ?? defaultPreferences.AcceptUnpromptedConnectionEndpoints,
                     EnableWindowsSpecificNatTraversal = peerPreferences.EnableWindowsSpecificNatTraversal ?? defaultPreferences.EnableWindowsSpecificNatTraversal,
                     BroadcastDiscoveryPeriodically = peerPreferences.BroadcastDiscoveryPeriodically ?? defaultPreferences.BroadcastDiscoveryPeriodically,
-                    PeriodicallyDiscoveryIntervalMinutes = peerPreferences.PeriodicallyDiscoveryIntervalMinutes ?? defaultPreferences.PeriodicallyDiscoveryIntervalMinutes
+                    PeriodicallyDiscoveryIntervalMinutes = peerPreferences.PeriodicallyDiscoveryIntervalMinutes ?? defaultPreferences.PeriodicallyDiscoveryIntervalMinutes,
                     ForceUpdate = peerPreferences.ForceUpdate ?? defaultPreferences.ForceUpdate
                 };
             }
