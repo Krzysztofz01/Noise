@@ -1,15 +1,12 @@
 using Noise.Core.Abstraction;
 using Noise.Core.Exceptions;
-using Noise.Core.Extensions;
 using Noise.Core.File;
 using Noise.Core.Peer;
 using Noise.Core.Protocol;
-using Noise.Core.Server;
 using Noise.Host.Abstraction;
 using Noise.Host.Exceptions;
 using Noise.Host.Modes;
 using System;
-using System.Threading;
 using System.Threading.Tasks;
 
 namespace Noise.Host
@@ -18,7 +15,6 @@ namespace Noise.Host
     {
         private const int SUCCESS = 0;
         private const int FAILURE = 1;
-        private const int _timeOffsetMs = 1500;
 
         public static IOutputMonitor OutputMonitor;
         public static ICommandHandler CommandHandler;
@@ -45,45 +41,8 @@ namespace Noise.Host
                             .Launch(args) ? SUCCESS : FAILURE;
                 }
 
-                var cts = new CancellationTokenSource();
-
-                using INoiseServer server = new NoiseServer(OutputMonitor, PeerConfiguration, GetNoiseServerConfiguration());
-                _ = Task.Run(async () => await server.StartAsync(cts.Token));
-
-                OutputMonitor.LogInformation("The Noise peer host started.");
-                Thread.Sleep(_timeOffsetMs);
-
-                var discoveryEmitter = new DiscoveryEmitter(PeerConfiguration, OutputMonitor);
-                _ = Task.Run(async () => await discoveryEmitter.Start(cts.Token));
-
-                ((OutputMonitor)OutputMonitor).WriteRaw("Spread the noise...", ConsoleColor.Yellow);
-                while (!cts.Token.IsCancellationRequested)
-                {
-                    try
-                    {
-                        CommandHandler.Prefix();
-
-                        string input = Console.ReadLine();
-                        if(!input.IsEmpty()) await CommandHandler.Execute(input, cts);
-                    }
-                    catch (CommandHandlerException ex)
-                    {
-                        OutputMonitor.LogError($"{Environment.NewLine}{ex.Message}");
-                    }
-                    catch (Exception ex)
-                    {
-                        OutputMonitor.LogError($"{Environment.NewLine}Unexpected failure.", ex);
-                        cts.Cancel();
-                    }
-                }
-
-                server.Stop();
-                Thread.Sleep(_timeOffsetMs);
-
-                await FileHandler.SavePeerConfigurationCipher(PeerConfiguration);
-                Thread.Sleep(_timeOffsetMs);
-
-                return SUCCESS;
+                return await new DefaultMode(OutputMonitor, PeerConfiguration, CommandHandler)
+                    .Launch(args) ? SUCCESS : FAILURE;
             }
             catch (Exception ex)
             {
@@ -143,21 +102,6 @@ namespace Noise.Host
             {
                 throw;
             }
-        }
-
-        private static NoiseServerConfiguration GetNoiseServerConfiguration()
-        {
-            return new NoiseServerConfiguration
-            {
-                VerboseMode = PeerConfiguration.Preferences.VerboseMode,
-                StreamBufferSize = PeerConfiguration.Preferences.ServerStreamBufferSize,
-                EnableKeepAlive = PeerConfiguration.Preferences.ServerEnableKeepAlive,
-                KeepAliveInterval = PeerConfiguration.Preferences.ServerKeepAliveInterval,
-                KeepAliveTime = PeerConfiguration.Preferences.ServerKeepAliveTime,
-                KeepAliveRetryCount = PeerConfiguration.Preferences.ServerKeepAliveRetryCount,
-                EnableNatTraversal = PeerConfiguration.Preferences.EnableWindowsSpecificNatTraversal,
-                RelayMode = false
-            };
         }
     }
 }
