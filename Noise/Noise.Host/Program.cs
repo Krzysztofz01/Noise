@@ -29,8 +29,7 @@ namespace Noise.Host
             try
             {
                 await InitializeServices();
-                var cts = new CancellationTokenSource();
-
+                
                 if (args.Length != 0)
                 {
                     if (args.FirstIs(ConfigMode.Command)) return await new ConfigMode(OutputMonitor, PeerConfiguration, CommandHandler)
@@ -41,7 +40,12 @@ namespace Noise.Host
 
                     if (args.FirstIs(ExportMode.Command)) return await new ExportMode(OutputMonitor, PeerConfiguration)
                             .Launch(args) ? SUCCESS : FAILURE;
+
+                    if (args.FirstIs(RelayMode.Command)) return await new RelayMode(OutputMonitor, PeerConfiguration)
+                            .Launch(args) ? SUCCESS : FAILURE;
                 }
+
+                var cts = new CancellationTokenSource();
 
                 using INoiseServer server = new NoiseServer(OutputMonitor, PeerConfiguration, GetNoiseServerConfiguration());
                 _ = Task.Run(async () => await server.StartAsync(cts.Token));
@@ -151,7 +155,8 @@ namespace Noise.Host
                 KeepAliveInterval = PeerConfiguration.Preferences.ServerKeepAliveInterval,
                 KeepAliveTime = PeerConfiguration.Preferences.ServerKeepAliveTime,
                 KeepAliveRetryCount = PeerConfiguration.Preferences.ServerKeepAliveRetryCount,
-                EnableNatTraversal = PeerConfiguration.Preferences.EnableWindowsSpecificNatTraversal
+                EnableNatTraversal = PeerConfiguration.Preferences.EnableWindowsSpecificNatTraversal,
+                RelayMode = false
             };
         }
     }
