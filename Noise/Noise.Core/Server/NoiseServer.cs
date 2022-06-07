@@ -81,7 +81,9 @@ namespace Noise.Core.Server
             try
             {
                 var senderEndpoint = e.PeerEndpoint;
-                LogVerbose($"Server received message packets from peer: {senderEndpoint}");
+                LogVerbose($"Server received signature packets from peer: {senderEndpoint}");
+
+                if (_noiseServerConfiguration.RelayMode) LogVerbose("Signature packets received, but the server is in relay mode.");
 
                 var bufferQueue = PacketBufferQueueBuilder
                     .Create()
@@ -134,6 +136,8 @@ namespace Noise.Core.Server
             var senderEndpoint = e.PeerEndpoint;
             LogVerbose($"Server received ping packets from peer: {senderEndpoint}");
 
+            if (_noiseServerConfiguration.RelayMode) LogVerbose("Ping packets received, but the server is in relay mode.");
+
             _outputMonitor.WriteIncomingPing(senderEndpoint);
         }
 
@@ -149,6 +153,8 @@ namespace Noise.Core.Server
             {
                 var senderEndpoint = e.PeerEndpoint;
                 LogVerbose($"Server received message packets from peer: {senderEndpoint}");
+
+                if (_noiseServerConfiguration.RelayMode) LogVerbose("Message packets received, but the server is in relay mode.");
 
                 var bufferQueue = PacketBufferQueueBuilder
                     .Create()
