@@ -71,8 +71,7 @@ namespace Noise.Core.Client
 
                 _outputMonitor.WriteOutgoingMessage(message);
 
-                Connect();
-                await SendAsync(bufferStream, cancellationToken);
+                await HandleTransaction(bufferStream, cancellationToken);
             }
             catch (PeerDataException ex)
             {
@@ -81,10 +80,6 @@ namespace Noise.Core.Client
             catch (Exception ex)
             {
                 _outputMonitor.LogError(ex);
-            }
-            finally
-            {
-                Disconnect();
             }
         }
 
@@ -108,8 +103,7 @@ namespace Noise.Core.Client
 
                 _outputMonitor.WriteOutgoingSignature(receiverPublicKey);
 
-                Connect();
-                await SendAsync(bufferStream, cancellationToken);
+                await HandleTransaction(bufferStream, cancellationToken);
 
                 _peerConfiguration.GetPeerByPublicKey(receiverPublicKey).SetSendingSignature(receiverIdentityProve);
             }
@@ -120,10 +114,6 @@ namespace Noise.Core.Client
             catch (Exception ex)
             {
                 _outputMonitor.LogError(ex);
-            }
-            finally
-            {
-                Disconnect();
             }
         }
 
@@ -152,9 +142,8 @@ namespace Noise.Core.Client
                     .InsertPacket(discoveryPacket)
                     .Build();
 
-                Connect();
-                await SendAsync(bufferStream, cancellationToken);
-                
+                await HandleTransaction(bufferStream, cancellationToken);
+
                 _outputMonitor.WriteOutgoinDiscovery(_peerIp);
             }
             catch (PeerDataException ex)
@@ -164,10 +153,6 @@ namespace Noise.Core.Client
             catch (Exception ex)
             {
                 _outputMonitor.LogError(ex);
-            }
-            finally
-            {
-                Disconnect();
             }
         }
 
@@ -181,8 +166,7 @@ namespace Noise.Core.Client
 
                 _outputMonitor.WriteOutgoingPing(_peerIp);
 
-                Connect();
-                await SendAsync(pingPacketBuffer, cancellationToken);
+                await HandleTransaction(pingPacketBuffer, cancellationToken);
             }
             catch (PeerDataException ex)
             {
@@ -191,10 +175,6 @@ namespace Noise.Core.Client
             catch (Exception ex)
             {
                 _outputMonitor.LogError(ex);
-            }
-            finally
-            {
-                Disconnect();
             }
         }
 
@@ -241,6 +221,32 @@ namespace Noise.Core.Client
                 }
 
                 LogVerbose("Noise client disposed.");
+            }
+        }
+
+        private async Task HandleTransaction(byte[] dataBuffer, CancellationToken token = default)
+        {
+            try
+            {
+                Connect();
+
+                await SendAsync(dataBuffer, token);
+
+                LogVerbose("Transaction successful.");
+            }
+            catch (TimeoutException ex)
+            {
+                LogVerbose("Transaction failed.");
+                LogVerbose(ex.Message);
+            }
+            catch (Exception)
+            {
+                LogVerbose("Transaction failed.");
+                throw;
+            }
+            finally
+            {
+                Disconnect();
             }
         }
 
@@ -316,15 +322,17 @@ namespace Noise.Core.Client
             {
                 connectTokenSource.Cancel();
                 _tcpClient.Close();
+
+                if (_peerConfiguration.Preferences.UseEndpointAttemptFilter && _peerConfiguration.Preferences.TreatConnectionTimeoutAsOffline)
+                {
+                    LogVerbose($"Endpoint: {_peerIp} will be marked as a disconnected endpoint.");
+                    _peerConfiguration.SetEndpointAsDisconnected(_peerIp);
+                }
+
                 throw new TimeoutException($"Timeout connecting to {_peerIp}.");
             }
 
-            try
-            {
-                _networkStream = _tcpClient.GetStream();
-                _networkStream.ReadTimeout = _noiseClientConfiguration.ReadTimeoutMs;
-            }
-            catch (Exception)
+            if (!_tcpClient.Connected)
             {
                 if (_peerConfiguration.Preferences.UseEndpointAttemptFilter)
                 {
@@ -332,6 +340,17 @@ namespace Noise.Core.Client
                     _peerConfiguration.SetEndpointAsDisconnected(_peerIp);
                 }
 
+                throw new TimeoutException($"Endpoint {_peerIp} is offline.");
+            }
+
+            try
+            {
+                _networkStream = _tcpClient.GetStream();
+                _networkStream.ReadTimeout = _noiseClientConfiguration.ReadTimeoutMs;
+            }
+            catch (Exception ex)
+            {
+                LogVerbose($"Unexpected network stream error. {ex.Message}");
                 throw;
             }
 
@@ -343,7 +362,6 @@ namespace Noise.Core.Client
             if (!_isConnected)
             {
                 LogVerbose("The noise client has already disconnected from the peer.");
-                return;
             }
 
             LogVerbose($"Disconnecting from the peer ${_peerIp}");
