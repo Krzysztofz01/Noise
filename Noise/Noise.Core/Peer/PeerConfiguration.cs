@@ -27,6 +27,11 @@ namespace Noise.Core.Peer
             return _remotePeers.Max(p => p.Identifier) + 1;
         }
 
+        private static string SanitizeEndpointString(string endpoint)
+        {
+            return endpoint.Trim().Split(':').First();
+        }
+
         public IEnumerable<PeerEndpoint> GetEndpoints(bool onlyConnected = true)
         {
             if (!onlyConnected) return _peerEndpoints;
@@ -45,7 +50,9 @@ namespace Noise.Core.Peer
 
         public void InsertEndpoint(string endpoint)
         {
-            var peerEndpoint = PeerEndpoint.Factory.FromParameters(endpoint);
+            var clearedEndpoint = SanitizeEndpointString(endpoint);
+
+            var peerEndpoint = PeerEndpoint.Factory.FromParameters(clearedEndpoint);
 
             if (_peerEndpoints.Any(e => e.Endpoint == peerEndpoint.Endpoint)) return;
 
@@ -54,18 +61,22 @@ namespace Noise.Core.Peer
 
         public void SetEndpointAsDisconnected(string endpoint)
         {
-            if (!IsEndpointKnown(endpoint))
+            var clearedEndpoint = SanitizeEndpointString(endpoint);
+
+            if (!IsEndpointKnown(clearedEndpoint))
                 throw new PeerDataException(PeerDataProblemType.ENDPOINT_NOT_FOUND);
 
-            _peerEndpoints.Single(e => e.Endpoint == endpoint).SetDisconnected();
+            _peerEndpoints.Single(e => e.Endpoint == clearedEndpoint).SetDisconnected();
         }
 
         public void SetEndpointAsConnected(string endpoint)
         {
-            if (!IsEndpointKnown(endpoint))
+            var clearedEndpoint = SanitizeEndpointString(endpoint);
+
+            if (!IsEndpointKnown(clearedEndpoint))
                 throw new PeerDataException(PeerDataProblemType.ENDPOINT_NOT_FOUND);
 
-            _peerEndpoints.Single(e => e.Endpoint == endpoint).SetConnected();
+            _peerEndpoints.Single(e => e.Endpoint == clearedEndpoint).SetConnected();
         }
 
         public void InsertPeer(string publicKey, string receivingSignature = null, string alias = null)
@@ -131,8 +142,9 @@ namespace Noise.Core.Peer
 
         public bool IsEndpointKnown(string endpoint)
         {
-            string ipv4Address = endpoint.Split(':').First();
-            return _peerEndpoints.Any(e => e.Endpoint == ipv4Address);
+            var clearedEndpoint = SanitizeEndpointString(endpoint);
+
+            return _peerEndpoints.Any(e => e.Endpoint == clearedEndpoint);
         }
 
         public bool IsPeerKnown(string publicKey)
