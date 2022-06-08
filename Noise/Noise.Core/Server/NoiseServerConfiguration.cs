@@ -68,5 +68,12 @@ namespace Noise.Core.Server
             get => _enableNatTraversal;
             set => _enableNatTraversal = value;
         }
+
+        private bool _relayMode = false;
+        public bool RelayMode
+        {
+            get => _relayMode;
+            set => _relayMode = value;
+        }
     }
 }
