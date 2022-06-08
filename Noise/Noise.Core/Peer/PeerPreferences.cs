@@ -85,6 +85,9 @@ namespace Noise.Core.Peer
         [ConfigurablePreference]
         public bool ForceUpdate { get; private set; }
 
+        [ConfigurablePreference]
+        public bool TreatConnectionTimeoutAsOffline { get; private set; }
+
         public bool ApplyPreference(string name, string value)
         {
             try
@@ -161,7 +164,8 @@ namespace Noise.Core.Peer
                 EnableWindowsSpecificNatTraversal = EnableWindowsSpecificNatTraversal,
                 BroadcastDiscoveryPeriodically = BroadcastDiscoveryPeriodically,
                 PeriodicallyDiscoveryIntervalMinutes = PeriodicallyDiscoveryIntervalMinutes,
-                ForceUpdate = ForceUpdate
+                ForceUpdate = ForceUpdate,
+                TreatConnectionTimeoutAsOffline = TreatConnectionTimeoutAsOffline
             };
         }
 
@@ -195,7 +199,8 @@ namespace Noise.Core.Peer
                     EnableWindowsSpecificNatTraversal = false,
                     BroadcastDiscoveryPeriodically = true,
                     PeriodicallyDiscoveryIntervalMinutes = 10,
-                    ForceUpdate = false
+                    ForceUpdate = false,
+                    TreatConnectionTimeoutAsOffline = false
                 };
             }
 
@@ -228,7 +233,8 @@ namespace Noise.Core.Peer
                     EnableWindowsSpecificNatTraversal = peerPreferences.EnableWindowsSpecificNatTraversal ?? defaultPreferences.EnableWindowsSpecificNatTraversal,
                     BroadcastDiscoveryPeriodically = peerPreferences.BroadcastDiscoveryPeriodically ?? defaultPreferences.BroadcastDiscoveryPeriodically,
                     PeriodicallyDiscoveryIntervalMinutes = peerPreferences.PeriodicallyDiscoveryIntervalMinutes ?? defaultPreferences.PeriodicallyDiscoveryIntervalMinutes,
-                    ForceUpdate = peerPreferences.ForceUpdate ?? defaultPreferences.ForceUpdate
+                    ForceUpdate = peerPreferences.ForceUpdate ?? defaultPreferences.ForceUpdate,
+                    TreatConnectionTimeoutAsOffline = peerPreferences.TreatConnectionTimeoutAsOffline ?? defaultPreferences.TreatConnectionTimeoutAsOffline
                 };
             }
         }
