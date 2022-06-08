@@ -6,7 +6,6 @@ using Noise.Host.Abstraction;
 using Noise.Host.Exceptions;
 using System;
 using System.Linq;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -223,13 +222,15 @@ namespace Noise.Host
                 if (selectedPeer is null)
                     throw new CommandHandlerException("No peer selected. Use the SELECT command or check all commands using HELP.");
 
-                var messageStringBuilder = new StringBuilder(string.Empty);
-                foreach (var a in args) messageStringBuilder.Append(a);
+                var message = string.Join(' ', args).Trim();
+
+                if (string.IsNullOrEmpty(message))
+                    throw new CommandHandlerException(usage);
 
                 foreach (var endpoint in _peerConfiguration.GetEndpoints(true))
                 {
                     using var client = CreateClient(endpoint.Endpoint);
-                    await client.SendMessage(selectedPeer.PublicKey, messageStringBuilder.ToString(), cts.Token);
+                    await client.SendMessage(selectedPeer.PublicKey, message, cts.Token);
                 }
 
             }
