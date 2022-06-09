@@ -103,7 +103,9 @@ namespace Noise.Host
                     throw new CommandHandlerException("No peer selected. Use the SELECT command or check all commands using HELP.");
 
                 selectedPeer.SetReceivingSignature(null);
-                selectedPeer.SetSendingSignature(null);
+
+                // Reset only the receiving signature, beacuse the sending signature is changed during >SIGN [overrite]
+                // selectedPeer.SetSendingSignature(null);
 
                 ((OutputMonitor)_outputMonitor).WriteRaw("Peer bleached successful.", ConsoleColor.Green);
             }
@@ -143,6 +145,17 @@ namespace Noise.Host
             foreach (var option in _peerConfiguration.GetPreferences())
             {
                 ((OutputMonitor)_outputMonitor).WriteRaw($"{option.Key}: {option.Value}", ConsoleColor.Yellow);
+            }
+
+            //TODO: Debug purpopses, remove before merge
+            _outputMonitor.WriteRaw(string.Empty);
+            ((OutputMonitor)_outputMonitor).WriteRaw("Signatures", ConsoleColor.Green);
+            foreach (var peer in _peerConfiguration.GetPeers())
+            {
+                ((OutputMonitor)_outputMonitor).WriteRaw($"Public key: {peer.PublicKey[.._publicKeyStripLength]}", ConsoleColor.Yellow);
+                ((OutputMonitor)_outputMonitor).WriteRaw($"Sending signature: {peer.SendingSignature ?? "<null>"}", ConsoleColor.Yellow);
+                ((OutputMonitor)_outputMonitor).WriteRaw($"Receiving signature: {peer.ReceivingSignature ?? "<null>"}", ConsoleColor.Yellow);
+                _outputMonitor.WriteRaw(string.Empty);
             }
         }
 
