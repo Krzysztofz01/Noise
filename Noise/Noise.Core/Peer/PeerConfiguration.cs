@@ -207,6 +207,54 @@ namespace Noise.Core.Peer
             Version = hostVersion;
         }
 
+        public string GetSendingSignatureForPeer(string publicKey)
+        {
+            var peer = _remotePeers.SingleOrDefault(p => p.PublicKey == publicKey) ??
+                throw new PeerDataException(PeerDataProblemType.PUBLIC_KEY_NOT_FOUND);
+
+            return peer.SendingSignature;
+        }
+
+        public string GetReceivingSignatureForPeer(string publicKey)
+        {
+            var peer = _remotePeers.SingleOrDefault(p => p.PublicKey == publicKey) ??
+                throw new PeerDataException(PeerDataProblemType.PUBLIC_KEY_NOT_FOUND);
+
+            return peer.ReceivingSignature;
+        }
+
+        public void SetSendingSignatureForPeer(string publicKey, string sendingSignature)
+        {
+            var peer = _remotePeers.SingleOrDefault(p => p.PublicKey == publicKey) ??
+                throw new PeerDataException(PeerDataProblemType.PUBLIC_KEY_NOT_FOUND);
+
+            peer.SetSendingSignature(sendingSignature);
+        }
+
+        public void SetReceivingSignatureForPeer(string publicKey, string receivingSignature)
+        {
+            var peer = _remotePeers.SingleOrDefault(p => p.PublicKey == publicKey) ??
+                throw new PeerDataException(PeerDataProblemType.PUBLIC_KEY_NOT_FOUND);
+
+            peer.SetReceivingSignature(receivingSignature);
+        }
+
+        public bool IsSendingSignatureDefinedForPeer(string publicKey)
+        {
+            var peer = _remotePeers.SingleOrDefault(p => p.PublicKey == publicKey) ??
+                throw new PeerDataException(PeerDataProblemType.PUBLIC_KEY_NOT_FOUND);
+
+            return peer.SendingSignature is not null;
+        }
+
+        public bool IsReceivingSignatureDefinedForPeer(string publicKey)
+        {
+            var peer = _remotePeers.SingleOrDefault(p => p.PublicKey == publicKey) ??
+                throw new PeerDataException(PeerDataProblemType.PUBLIC_KEY_NOT_FOUND);
+
+            return peer.ReceivingSignature is not null;
+        }
+
         public string Serialize()
         {
             var persistenceConfigurationForm = new PeerConfigurationPersistence

@@ -105,15 +105,18 @@ namespace Noise.Core.Server
                     }
                 }
 
-                if (_peerConfiguration.HasPeerAssignedSignature(senderPublicKey))
+                if (_peerConfiguration.IsReceivingSignatureDefinedForPeer(senderPublicKey))
                 {
                     LogVerbose("Given peer has already asigned a signature. Someone might try to spoof another peer.");
                     return;
                 }
 
+                //TODO: Debug purpopses, remove before merge
+                _outputMonitor.LogInformation($"Received signature for proving identity: {signature}");
+
                 LogVerbose($"Signature received successful.");
 
-                _peerConfiguration.GetPeerByPublicKey(senderPublicKey).SetReceivingSignature(signature);
+                _peerConfiguration.SetReceivingSignatureForPeer(senderPublicKey, signature);
 
                 LogVerbose("Received signature applied successful.");
             }
@@ -166,6 +169,9 @@ namespace Noise.Core.Server
 
                 var packetHandlingService = new PacketHandlingService();
                 var (senderIdentityProve, message) = packetHandlingService.ReceiveMessage(keyBuffer, messageBuffer, _peerConfiguration.Secrets.PrivateKey);
+
+                //TODO: Debug purpopses, remove before merge
+                _outputMonitor.LogInformation($"Received signature: {senderIdentityProve}");
 
                 if (!_peerConfiguration.IsReceivingSignatureValid(senderIdentityProve))
                 {

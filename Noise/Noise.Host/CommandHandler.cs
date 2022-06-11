@@ -149,6 +149,7 @@ namespace Noise.Host
 
             //TODO: Debug purpopses, remove before merge
             _outputMonitor.WriteRaw(string.Empty);
+            ((OutputMonitor)_outputMonitor).WriteRaw("DEBUG", ConsoleColor.Red);
             ((OutputMonitor)_outputMonitor).WriteRaw("Signatures", ConsoleColor.Green);
             foreach (var peer in _peerConfiguration.GetPeers())
             {
