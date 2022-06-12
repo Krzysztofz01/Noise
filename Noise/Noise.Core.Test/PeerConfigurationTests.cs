@@ -227,6 +227,32 @@ namespace Noise.Core.Test
         }
 
         [Fact]
+        public void PeerShouldAssignAndRetriveSignatures()
+        {
+            var pc = MockUpPeerConfiguration();
+            var publicKey = MockUpPeerConfiguration().Secrets.PublicKey;
+            pc.InsertPeer(publicKey);
+
+            Assert.False(pc.IsReceivingSignatureDefinedForPeer(publicKey));
+            Assert.False(pc.IsSendingSignatureDefinedForPeer(publicKey));
+
+            var expectedReceivingSignature = MockUpPeerSignature();
+            var expectedSendingSignature = MockUpPeerSignature();
+
+            pc.SetReceivingSignatureForPeer(publicKey, expectedReceivingSignature);
+            pc.SetSendingSignatureForPeer(publicKey, expectedSendingSignature);
+
+            Assert.True(pc.IsReceivingSignatureDefinedForPeer(publicKey));
+            Assert.True(pc.IsSendingSignatureDefinedForPeer(publicKey));
+
+            var actualReceivingSignature = pc.GetReceivingSignatureForPeer(publicKey);
+            var actualSendingSignature = pc.GetSendingSignatureForPeer(publicKey);
+
+            Assert.Equal(expectedReceivingSignature, actualReceivingSignature);
+            Assert.Equal(expectedSendingSignature, actualSendingSignature);
+        }
+
+        [Fact]
         public void PeerShouldTellIfASignatureIsAssignedToRemotePeer()
         {
             var pc = MockUpPeerConfiguration();
