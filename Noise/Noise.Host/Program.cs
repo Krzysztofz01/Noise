@@ -36,6 +36,9 @@ namespace Noise.Host
 
                     if (args.FirstIs(RelayMode.Command)) return await new RelayMode(OutputMonitor, PeerConfiguration)
                             .Launch(args) ? SUCCESS : FAILURE;
+
+                    if (args.FirstIs(FetchMode.Command)) return await new FetchMode(OutputMonitor, PeerConfiguration)
+                            .Launch(args) ? SUCCESS : FAILURE;
                 }
 
                 return await new DefaultMode(OutputMonitor, PeerConfiguration, CommandHandler)
