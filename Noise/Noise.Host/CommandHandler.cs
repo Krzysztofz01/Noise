@@ -278,9 +278,10 @@ namespace Noise.Host
 
                 if (type == "endpoint")
                 {
-                    foreach (var endpoint in _peerConfiguration.GetEndpoints(true))
+                    foreach (var endpoint in _peerConfiguration.GetEndpoints(false).OrderBy(e => e.IsConnected))
                     {
-                        _outputMonitor.WriteRaw(endpoint.Endpoint, true);
+                        var status = endpoint.IsConnected ? "Online" : "Offline";
+                        _outputMonitor.WriteRaw($"{endpoint.Endpoint} [{status}]", true);
                     }
 
                     return;
