@@ -59,6 +59,16 @@ namespace Noise.Core.Peer
             _peerEndpoints.Add(peerEndpoint);
         }
 
+        public void RemoveEndpoint(string endpoint)
+        {
+            var clearedEndpoint = SanitizeEndpointString(endpoint);
+
+            var targetEndpoint = _peerEndpoints.SingleOrDefault(e => e.Endpoint == clearedEndpoint);
+            if (targetEndpoint is null) throw new PeerDataException(PeerDataProblemType.ENDPOINT_NOT_FOUND);
+
+            _peerEndpoints.Remove(targetEndpoint);
+        }
+
         public void SetEndpointAsDisconnected(string endpoint)
         {
             var clearedEndpoint = SanitizeEndpointString(endpoint);
@@ -100,6 +110,14 @@ namespace Noise.Core.Peer
                 throw new InvalidOperationException("Given alias is alredy is usage.");
 
             _remotePeers.Add(RemotePeer.Factory.FromParameters(publicKey, GenerateOrdinalNumberIdentifier(), receivingSignature, alias));
+        }
+
+        public void RemovePeer(string publicKey)
+        {
+            var peer = _remotePeers.SingleOrDefault(p => p.PublicKey == publicKey);
+            if (peer is null) throw new PeerDataException(PeerDataProblemType.PUBLIC_KEY_NOT_FOUND);
+
+            _remotePeers.Remove(peer);
         }
 
         public void InsertAlias(string publicKey, string alias)
