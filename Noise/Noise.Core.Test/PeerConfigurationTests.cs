@@ -45,6 +45,39 @@ namespace Noise.Core.Test
         }
 
         [Fact]
+        public void PeerShouldRemoveExistingEndpoint()
+        {
+            var pc = MockUpPeerConfiguration();
+
+            var targetEndpoint = "127.0.0.2";
+
+            Assert.Empty(pc.GetEndpoints());
+
+            pc.InsertEndpoint(targetEndpoint);
+
+            Assert.NotEmpty(pc.GetEndpoints());
+
+            pc.RemoveEndpoint(targetEndpoint);
+
+            Assert.Empty(pc.GetEndpoints());
+        }
+
+        [Fact]
+        public void PeerShouldThrowOnRemovingNotExistingEndpoint()
+        {
+            var pc = MockUpPeerConfiguration();
+
+            var targetEndpoint = "127.0.0.2";
+
+            Assert.Empty(pc.GetEndpoints());
+
+            Assert.Throws<PeerDataException>(() =>
+            {
+                pc.RemoveEndpoint(targetEndpoint);
+            });
+        }
+
+        [Fact]
         public void PeerShouldThrowOnInvalidEndpoint()
         {
             var pc = MockUpPeerConfiguration();
@@ -72,6 +105,39 @@ namespace Noise.Core.Test
             var expectedCount = 2;
 
             Assert.Equal(expectedCount, pc.GetPeers().Count());
+        }
+
+        [Fact]
+        public void PeerShouldRemoveExistingPublicKey()
+        {
+            var pc = MockUpPeerConfiguration();
+
+            var targetPublicKey = MockUpPeerConfiguration().Secrets.PublicKey;
+
+            Assert.Empty(pc.GetPeers());
+
+            pc.InsertPeer(targetPublicKey, MockUpPeerSignature());
+
+            Assert.NotEmpty(pc.GetPeers());
+
+            pc.RemovePeer(targetPublicKey);
+
+            Assert.Empty(pc.GetPeers());
+        }
+
+        [Fact]
+        public void PeerShouldThrowOnRemovingNotExistingPublicKey()
+        {
+            var pc = MockUpPeerConfiguration();
+
+            var targetPublicKey = MockUpPeerConfiguration().Secrets.PublicKey;
+
+            Assert.Empty(pc.GetPeers());
+
+            Assert.Throws<PeerDataException>(() =>
+            {
+                pc.RemovePeer(targetPublicKey);
+            });
         }
 
         [Fact]
