@@ -103,7 +103,11 @@ namespace Noise.Host
                     throw new CommandHandlerException("No peer selected. Use the SELECT command or check all commands using HELP.");
 
                 selectedPeer.SetReceivingSignature(null);
-                selectedPeer.SetSendingSignature(null);
+
+                // Fix for the: [Unknown] Identity prove unexpected mismatch
+                // Reset only the receiving signature, beacuse the sending signature is changed during SIGN command
+                //
+                // selectedPeer.SetSendingSignature(null);
 
                 ((OutputMonitor)_outputMonitor).WriteRaw("Peer bleached successful.", ConsoleColor.Green);
             }
@@ -195,7 +199,7 @@ namespace Noise.Host
 
                 bool overrite = args.Any(a => a.ToLower() == "overrite");
 
-                if (selectedPeer.SendingSignature is not null && !overrite)
+                if (_peerConfiguration.IsSendingSignatureDefinedForPeer(selectedPeer.PublicKey) && !overrite)
                     throw new CommandHandlerException($"This peer has a signature assigned.{Environment.NewLine}{usage}");
 
                 foreach (var endpoint in _peerConfiguration.GetEndpoints(true))

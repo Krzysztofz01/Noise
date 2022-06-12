@@ -54,7 +54,7 @@ namespace Noise.Core.Client
         {
             try
             {
-                var signature = _peerConfiguration.GetPeerByPublicKey(receiverPublicKey).SendingSignature;
+                var signature = _peerConfiguration.GetSendingSignatureForPeer(receiverPublicKey);
                 if (signature is null)
                 {
                     _outputMonitor.LogWarning("The target peer has not provided any certification. Unable to send the message.");
@@ -105,7 +105,7 @@ namespace Noise.Core.Client
 
                 await HandleTransaction(bufferStream, cancellationToken);
 
-                _peerConfiguration.GetPeerByPublicKey(receiverPublicKey).SetSendingSignature(receiverIdentityProve);
+                _peerConfiguration.SetSendingSignatureForPeer(receiverPublicKey, receiverIdentityProve);
             }
             catch (PeerDataException ex)
             {
@@ -121,7 +121,7 @@ namespace Noise.Core.Client
         {
             try
             {
-                var signature = _peerConfiguration.GetPeerByPublicKey(receiverPublicKey).SendingSignature;
+                var signature = _peerConfiguration.GetSendingSignatureForPeer(receiverPublicKey);
                 if (signature is null)
                 {
                     LogVerbose("The target peer has not provided any certification. Unable to send the discovery packet. Peer skipped.");

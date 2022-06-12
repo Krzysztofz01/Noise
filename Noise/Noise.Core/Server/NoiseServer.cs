@@ -105,7 +105,7 @@ namespace Noise.Core.Server
                     }
                 }
 
-                if (_peerConfiguration.HasPeerAssignedSignature(senderPublicKey))
+                if (_peerConfiguration.IsReceivingSignatureDefinedForPeer(senderPublicKey))
                 {
                     LogVerbose("Given peer has already asigned a signature. Someone might try to spoof another peer.");
                     return;
@@ -113,7 +113,7 @@ namespace Noise.Core.Server
 
                 LogVerbose($"Signature received successful.");
 
-                _peerConfiguration.GetPeerByPublicKey(senderPublicKey).SetReceivingSignature(signature);
+                _peerConfiguration.SetReceivingSignatureForPeer(senderPublicKey, signature);
 
                 LogVerbose("Received signature applied successful.");
             }
