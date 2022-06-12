@@ -67,6 +67,7 @@ namespace Noise.Host
                 case "PING": await ExecutePing(args, cancellationTokenSource); return;
                 case "ALIAS": ExecuteAlias(args); return;
                 case "INSERT": ExecuteInsert(args); return;
+                case "REMOVE": ExecuteRemove(args); return;
                 case "HELP": ExecuteHelp(); return;
                 case "SIGN": await ExecuteSign(args, cancellationTokenSource); return;
                 case "INFO": ExecuteInfo(); return;
@@ -377,6 +378,49 @@ namespace Noise.Host
             }
         }
 
+        public void ExecuteRemove(string[] args)
+        {
+            const string usage = "Usage: REMOVE <peer/endpoint> [peer_ordinal_number/endpoint]";
+
+            try
+            {
+                if (args.Length != 2)
+                    throw new CommandHandlerException(usage);
+
+                var type = args.First().ToLower();
+                var value = args.Last();
+
+                if (type == "peer")
+                {
+                    var ordinalNumber = Convert.ToInt32(value);
+                    var peer = _peerConfiguration.GetPeerByOrdinalNumberIdentifier(ordinalNumber);
+
+                    if (selectedPeer.PublicKey == peer.PublicKey)
+                    {
+                        selectedPeer = null;
+                        _outputMonitor.LogInformation("Selected peer is no longer available.");
+                    }
+
+                    _peerConfiguration.RemovePeer(peer.PublicKey);
+                    _outputMonitor.LogInformation("Peer with given public key removed successful.");
+                    return;
+                }
+
+                if (type == "endpoint")
+                {
+                    _peerConfiguration.RemoveEndpoint(value);
+                    _outputMonitor.LogInformation("Given endpoint removed successful.");
+                    return;
+                }
+
+                throw new CommandHandlerException(usage);
+            }
+            catch (Exception ex)
+            {
+                throw new CommandHandlerException(ex.Message);
+            }
+        }
+
         private void ExecuteHelp()
         {
             ((OutputMonitor)_outputMonitor).WriteRaw(Title.AsciiTitle, ConsoleColor.DarkGreen, false);
@@ -402,6 +446,7 @@ namespace Noise.Host
             ((OutputMonitor)_outputMonitor).WriteRaw("PING - Send a ping packet to a certain endpoint.", ConsoleColor.Yellow);
             ((OutputMonitor)_outputMonitor).WriteRaw("ALIAS - Set alias to certain peer.", ConsoleColor.Yellow);
             ((OutputMonitor)_outputMonitor).WriteRaw("INSERT - Insert new peer key and optional alias or a endpoint.", ConsoleColor.Yellow);
+            ((OutputMonitor)_outputMonitor).WriteRaw("REMOVE - Remove a given peer key or a endpoint.", ConsoleColor.Yellow);
             ((OutputMonitor)_outputMonitor).WriteRaw("HELP - Show available commands.", ConsoleColor.Yellow);
             ((OutputMonitor)_outputMonitor).WriteRaw("INFO - Print information about local peer.", ConsoleColor.Yellow);
             ((OutputMonitor)_outputMonitor).WriteRaw("DISCOVER - Broadcast discovery packets to the network.", ConsoleColor.Yellow);
