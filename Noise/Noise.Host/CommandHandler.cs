@@ -99,6 +99,12 @@ namespace Noise.Host
         {
             try
             {
+                if (!_peerConfiguration.Preferences.AllowPeerSignatureBleach)
+                {
+                    _outputMonitor.LogWarning("You can not bleach the signature with the AllowPeerSignatureBleach preference set to false");
+                    return;
+                }
+
                 if (selectedPeer is null)
                     throw new CommandHandlerException("No peer selected. Use the SELECT command or check all commands using HELP.");
 
@@ -387,7 +393,12 @@ namespace Noise.Host
             ((OutputMonitor)_outputMonitor).WriteRaw("RESET - Reset selected peer.", ConsoleColor.Yellow);
             ((OutputMonitor)_outputMonitor).WriteRaw("SEND(:) - Send message to selected peer.", ConsoleColor.Yellow);
             ((OutputMonitor)_outputMonitor).WriteRaw("SIGN - Send signature to selected peer.", ConsoleColor.Yellow);
-            ((OutputMonitor)_outputMonitor).WriteRaw("BLEACH - Reset all signatures related to selected peer.", ConsoleColor.Yellow);
+
+            if (_peerConfiguration.Preferences.AllowPeerSignatureBleach)
+            {
+                ((OutputMonitor)_outputMonitor).WriteRaw("BLEACH - Reset the receiving signature related to the selected peer.", ConsoleColor.Yellow);
+            }
+            
             ((OutputMonitor)_outputMonitor).WriteRaw("PING - Send a ping packet to a certain endpoint.", ConsoleColor.Yellow);
             ((OutputMonitor)_outputMonitor).WriteRaw("ALIAS - Set alias to certain peer.", ConsoleColor.Yellow);
             ((OutputMonitor)_outputMonitor).WriteRaw("INSERT - Insert new peer key and optional alias or a endpoint.", ConsoleColor.Yellow);

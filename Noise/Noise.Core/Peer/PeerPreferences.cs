@@ -88,6 +88,9 @@ namespace Noise.Core.Peer
         [ConfigurablePreference]
         public bool TreatConnectionTimeoutAsOffline { get; private set; }
 
+        [ConfigurablePreference]
+        public bool AllowPeerSignatureBleach { get; private set; }
+
         public bool ApplyPreference(string name, string value)
         {
             try
@@ -165,7 +168,8 @@ namespace Noise.Core.Peer
                 BroadcastDiscoveryPeriodically = BroadcastDiscoveryPeriodically,
                 PeriodicallyDiscoveryIntervalMinutes = PeriodicallyDiscoveryIntervalMinutes,
                 ForceUpdate = ForceUpdate,
-                TreatConnectionTimeoutAsOffline = TreatConnectionTimeoutAsOffline
+                TreatConnectionTimeoutAsOffline = TreatConnectionTimeoutAsOffline,
+                AllowPeerSignatureBleach = AllowPeerSignatureBleach
             };
         }
 
@@ -200,7 +204,8 @@ namespace Noise.Core.Peer
                     BroadcastDiscoveryPeriodically = true,
                     PeriodicallyDiscoveryIntervalMinutes = 10,
                     ForceUpdate = false,
-                    TreatConnectionTimeoutAsOffline = false
+                    TreatConnectionTimeoutAsOffline = false,
+                    AllowPeerSignatureBleach = false
                 };
             }
 
@@ -234,7 +239,8 @@ namespace Noise.Core.Peer
                     BroadcastDiscoveryPeriodically = peerPreferences.BroadcastDiscoveryPeriodically ?? defaultPreferences.BroadcastDiscoveryPeriodically,
                     PeriodicallyDiscoveryIntervalMinutes = peerPreferences.PeriodicallyDiscoveryIntervalMinutes ?? defaultPreferences.PeriodicallyDiscoveryIntervalMinutes,
                     ForceUpdate = peerPreferences.ForceUpdate ?? defaultPreferences.ForceUpdate,
-                    TreatConnectionTimeoutAsOffline = peerPreferences.TreatConnectionTimeoutAsOffline ?? defaultPreferences.TreatConnectionTimeoutAsOffline
+                    TreatConnectionTimeoutAsOffline = peerPreferences.TreatConnectionTimeoutAsOffline ?? defaultPreferences.TreatConnectionTimeoutAsOffline,
+                    AllowPeerSignatureBleach = peerPreferences.AllowPeerSignatureBleach ?? defaultPreferences.AllowPeerSignatureBleach
                 };
             }
         }

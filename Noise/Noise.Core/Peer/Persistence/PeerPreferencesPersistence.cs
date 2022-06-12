@@ -27,5 +27,6 @@
         public int? PeriodicallyDiscoveryIntervalMinutes { get; set; }
         public bool? ForceUpdate { get; set; }
         public bool? TreatConnectionTimeoutAsOffline { get; set; }
+        public bool? AllowPeerSignatureBleach { get; set; }
     }
 }
