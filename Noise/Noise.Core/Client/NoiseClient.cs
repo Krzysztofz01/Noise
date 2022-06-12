@@ -55,10 +55,6 @@ namespace Noise.Core.Client
             try
             {
                 var signature = _peerConfiguration.GetSendingSignatureForPeer(receiverPublicKey);
-
-                //TODO: Debug purpopses, remove before merge
-                _outputMonitor.LogInformation($"Signature to sign message: {signature}");
-                
                 if (signature is null)
                 {
                     _outputMonitor.LogWarning("The target peer has not provided any certification. Unable to send the message.");
@@ -110,9 +106,6 @@ namespace Noise.Core.Client
                 await HandleTransaction(bufferStream, cancellationToken);
 
                 _peerConfiguration.SetSendingSignatureForPeer(receiverPublicKey, receiverIdentityProve);
-
-                //TODO: Debug purpopses, remove before merge
-                _outputMonitor.LogInformation($"Currently sent signature: {receiverIdentityProve}");
             }
             catch (PeerDataException ex)
             {

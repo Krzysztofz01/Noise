@@ -111,9 +111,6 @@ namespace Noise.Core.Server
                     return;
                 }
 
-                //TODO: Debug purpopses, remove before merge
-                _outputMonitor.LogInformation($"Received signature for proving identity: {signature}");
-
                 LogVerbose($"Signature received successful.");
 
                 _peerConfiguration.SetReceivingSignatureForPeer(senderPublicKey, signature);
@@ -169,9 +166,6 @@ namespace Noise.Core.Server
 
                 var packetHandlingService = new PacketHandlingService();
                 var (senderIdentityProve, message) = packetHandlingService.ReceiveMessage(keyBuffer, messageBuffer, _peerConfiguration.Secrets.PrivateKey);
-
-                //TODO: Debug purpopses, remove before merge
-                _outputMonitor.LogInformation($"Received signature: {senderIdentityProve}");
 
                 if (!_peerConfiguration.IsReceivingSignatureValid(senderIdentityProve))
                 {

@@ -104,7 +104,9 @@ namespace Noise.Host
 
                 selectedPeer.SetReceivingSignature(null);
 
-                // Reset only the receiving signature, beacuse the sending signature is changed during >SIGN [overrite]
+                // Fix for the: [Unknown] Identity prove unexpected mismatch
+                // Reset only the receiving signature, beacuse the sending signature is changed during SIGN command
+                //
                 // selectedPeer.SetSendingSignature(null);
 
                 ((OutputMonitor)_outputMonitor).WriteRaw("Peer bleached successful.", ConsoleColor.Green);
@@ -145,18 +147,6 @@ namespace Noise.Host
             foreach (var option in _peerConfiguration.GetPreferences())
             {
                 ((OutputMonitor)_outputMonitor).WriteRaw($"{option.Key}: {option.Value}", ConsoleColor.Yellow);
-            }
-
-            //TODO: Debug purpopses, remove before merge
-            _outputMonitor.WriteRaw(string.Empty);
-            ((OutputMonitor)_outputMonitor).WriteRaw("DEBUG", ConsoleColor.Red);
-            ((OutputMonitor)_outputMonitor).WriteRaw("Signatures", ConsoleColor.Green);
-            foreach (var peer in _peerConfiguration.GetPeers())
-            {
-                ((OutputMonitor)_outputMonitor).WriteRaw($"Public key: {peer.PublicKey[.._publicKeyStripLength]}", ConsoleColor.Yellow);
-                ((OutputMonitor)_outputMonitor).WriteRaw($"Sending signature: {peer.SendingSignature ?? "<null>"}", ConsoleColor.Yellow);
-                ((OutputMonitor)_outputMonitor).WriteRaw($"Receiving signature: {peer.ReceivingSignature ?? "<null>"}", ConsoleColor.Yellow);
-                _outputMonitor.WriteRaw(string.Empty);
             }
         }
 
@@ -209,7 +199,7 @@ namespace Noise.Host
 
                 bool overrite = args.Any(a => a.ToLower() == "overrite");
 
-                if (selectedPeer.SendingSignature is not null && !overrite)
+                if (_peerConfiguration.IsSendingSignatureDefinedForPeer(selectedPeer.PublicKey) && !overrite)
                     throw new CommandHandlerException($"This peer has a signature assigned.{Environment.NewLine}{usage}");
 
                 foreach (var endpoint in _peerConfiguration.GetEndpoints(true))
