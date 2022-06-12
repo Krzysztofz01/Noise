@@ -268,10 +268,11 @@ namespace Noise.Host
                     foreach (var peer in _peerConfiguration.GetPeers())
                     {
                         string publicKey = fullPublicKey ? peer.PublicKey : peer.PublicKey[.._publicKeyStripLength];
-                        _outputMonitor.WriteRaw($"[{peer.Identifier}] {peer.Alias} - {publicKey}", true);
+                        string signingDetails = GetSignatureDetails(peer.PublicKey);
+
+                        _outputMonitor.WriteRaw($"[{peer.Identifier}] {peer.Alias} ({signingDetails}) - {publicKey}", true);
                     }
 
-                    _outputMonitor.LogInformation($"You can optionaly print the full public key.{Environment.NewLine}{usage}");
                     return;
                 }
 
@@ -291,6 +292,17 @@ namespace Noise.Host
             {
                 throw new CommandHandlerException(ex.Message);
             }
+        }
+
+        private string GetSignatureDetails(string publicKey)
+        {
+            var receiving = _peerConfiguration.IsReceivingSignatureDefinedForPeer(publicKey);
+            var sending = _peerConfiguration.IsSendingSignatureDefinedForPeer(publicKey);
+
+            if (receiving && sending) return "Double-signed";
+            if (receiving && !sending) return "Receiving-signed";
+            if (!receiving && sending) return "Sending-signed";
+            return "Unsigned";
         }
 
         private void ExecuteReset()
