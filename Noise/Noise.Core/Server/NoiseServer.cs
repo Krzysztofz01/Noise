@@ -81,7 +81,9 @@ namespace Noise.Core.Server
             try
             {
                 var senderEndpoint = e.PeerEndpoint;
-                LogVerbose($"Server received message packets from peer: {senderEndpoint}");
+                LogVerbose($"Server received signature packets from peer: {senderEndpoint}");
+
+                if (_noiseServerConfiguration.RelayMode) LogVerbose("Signature packets received, but the server is in relay mode.");
 
                 var bufferQueue = PacketBufferQueueBuilder
                     .Create()
@@ -103,7 +105,7 @@ namespace Noise.Core.Server
                     }
                 }
 
-                if (_peerConfiguration.HasPeerAssignedSignature(senderPublicKey))
+                if (_peerConfiguration.IsReceivingSignatureDefinedForPeer(senderPublicKey))
                 {
                     LogVerbose("Given peer has already asigned a signature. Someone might try to spoof another peer.");
                     return;
@@ -111,7 +113,7 @@ namespace Noise.Core.Server
 
                 LogVerbose($"Signature received successful.");
 
-                _peerConfiguration.GetPeerByPublicKey(senderPublicKey).SetReceivingSignature(signature);
+                _peerConfiguration.SetReceivingSignatureForPeer(senderPublicKey, signature);
 
                 LogVerbose("Received signature applied successful.");
             }
@@ -134,6 +136,8 @@ namespace Noise.Core.Server
             var senderEndpoint = e.PeerEndpoint;
             LogVerbose($"Server received ping packets from peer: {senderEndpoint}");
 
+            if (_noiseServerConfiguration.RelayMode) LogVerbose("Ping packets received, but the server is in relay mode.");
+
             _outputMonitor.WriteIncomingPing(senderEndpoint);
         }
 
@@ -149,6 +153,8 @@ namespace Noise.Core.Server
             {
                 var senderEndpoint = e.PeerEndpoint;
                 LogVerbose($"Server received message packets from peer: {senderEndpoint}");
+
+                if (_noiseServerConfiguration.RelayMode) LogVerbose("Message packets received, but the server is in relay mode.");
 
                 var bufferQueue = PacketBufferQueueBuilder
                     .Create()
@@ -547,6 +553,14 @@ namespace Noise.Core.Server
                     _tcpListener.Server.SetSocketOption(SocketOptionLevel.Tcp, SocketOptionName.TcpKeepAliveTime, _noiseServerConfiguration.KeepAliveTime);
                     _tcpListener.Server.SetSocketOption(SocketOptionLevel.Tcp, SocketOptionName.TcpKeepAliveInterval, _noiseServerConfiguration.KeepAliveInterval);
                     _tcpListener.Server.SetSocketOption(SocketOptionLevel.Tcp, SocketOptionName.TcpKeepAliveRetryCount, _noiseServerConfiguration.KeepAliveRetryCount);
+                }
+
+                if (OperatingSystem.IsWindows())
+                {
+                    if (_noiseServerConfiguration.EnableNatTraversal)
+                        LogVerbose("Appling Windows system specific setting: EnableNatTraversal");
+
+                    _tcpListener.AllowNatTraversal(_noiseServerConfiguration.EnableNatTraversal);
                 }
             }
             catch (Exception ex)

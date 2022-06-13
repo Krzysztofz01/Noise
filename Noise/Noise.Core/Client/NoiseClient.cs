@@ -18,8 +18,9 @@ namespace Noise.Core.Client
         private readonly PeerConfiguration _peerConfiguration;
         private readonly NoiseClientConfiguration _noiseClientConfiguration;
 
+        private readonly IPacketHandlingService _packetHandlingService;
+
         private readonly string _peerIp = null;
-        private readonly IPAddress _ipAddress = null;
         private TcpClient _tcpClient = null;
         private NetworkStream _networkStream = null;
 
@@ -44,24 +45,23 @@ namespace Noise.Core.Client
             if (!IPAddress.TryParse(endpoint, out var parsedEndpoint))
                 throw new ArgumentException("Invalid endpoint provided.", nameof(endpoint));
 
-            _ipAddress = parsedEndpoint;
             _peerIp = parsedEndpoint.ToString();
+
+            _packetHandlingService = new PacketHandlingService();
         }
 
         public async Task SendMessage(string receiverPublicKey, string message, CancellationToken cancellationToken = default)
         {
             try
             {
-                var packetHandlingService = new PacketHandlingService();
-
-                var signature = _peerConfiguration.GetPeerByPublicKey(receiverPublicKey).SendingSignature;
+                var signature = _peerConfiguration.GetSendingSignatureForPeer(receiverPublicKey);
                 if (signature is null)
                 {
                     _outputMonitor.LogWarning("The target peer has not provided any certification. Unable to send the message.");
                     return;
                 }
 
-                var (keyPacket, messagePacket) = packetHandlingService.CreateMessagePackets(signature, receiverPublicKey, message);
+                var (keyPacket, messagePacket) = _packetHandlingService.CreateMessagePackets(signature, receiverPublicKey, message);
 
                 var bufferStream = PacketBufferStreamBuilder
                     .Create()
@@ -71,8 +71,7 @@ namespace Noise.Core.Client
 
                 _outputMonitor.WriteOutgoingMessage(message);
 
-                Connect();
-                await SendAsync(bufferStream, cancellationToken);
+                await HandleTransaction(bufferStream, cancellationToken);
             }
             catch (PeerDataException ex)
             {
@@ -82,21 +81,15 @@ namespace Noise.Core.Client
             {
                 _outputMonitor.LogError(ex);
             }
-            finally
-            {
-                Disconnect();
-            }
         }
 
         public async Task SendSignature(string receiverPublicKey, CancellationToken cancellationToken = default)
         {
             try
             {
-                var packetHandlingService = new PacketHandlingService();
-
                 var certification = _peerConfiguration.Preferences.IndependentMediumCertification ?? null;
 
-                var (keyPacket, signaturePacket, receiverIdentityProve) = packetHandlingService.CreateSignaturePacket(
+                var (keyPacket, signaturePacket, receiverIdentityProve) = _packetHandlingService.CreateSignaturePacket(
                     receiverPublicKey,
                     _peerConfiguration.Secrets.PublicKey,
                     _peerConfiguration.Secrets.PrivateKey,
@@ -110,10 +103,9 @@ namespace Noise.Core.Client
 
                 _outputMonitor.WriteOutgoingSignature(receiverPublicKey);
 
-                Connect();
-                await SendAsync(bufferStream, cancellationToken);
+                await HandleTransaction(bufferStream, cancellationToken);
 
-                _peerConfiguration.GetPeerByPublicKey(receiverPublicKey).SetSendingSignature(receiverIdentityProve);
+                _peerConfiguration.SetSendingSignatureForPeer(receiverPublicKey, receiverIdentityProve);
             }
             catch (PeerDataException ex)
             {
@@ -123,19 +115,13 @@ namespace Noise.Core.Client
             {
                 _outputMonitor.LogError(ex);
             }
-            finally
-            {
-                Disconnect();
-            }
         }
 
         public async Task SendDiscovery(string receiverPublicKey, CancellationToken cancellationToken = default)
         {
             try
             {
-                var packetHandlingService = new PacketHandlingService();
-
-                var signature = _peerConfiguration.GetPeerByPublicKey(receiverPublicKey).SendingSignature;
+                var signature = _peerConfiguration.GetSendingSignatureForPeer(receiverPublicKey);
                 if (signature is null)
                 {
                     LogVerbose("The target peer has not provided any certification. Unable to send the discovery packet. Peer skipped.");
@@ -148,7 +134,7 @@ namespace Noise.Core.Client
                     _peerConfiguration.GetPeers().Select(p => p.PublicKey) :
                     Array.Empty<string>();
 
-                var (keyPacket, discoveryPacket) = packetHandlingService.CreateDiscoveryPackets(signature, receiverPublicKey, endpoints, publicKeys);
+                var (keyPacket, discoveryPacket) = _packetHandlingService.CreateDiscoveryPackets(signature, receiverPublicKey, endpoints, publicKeys);
 
                 var bufferStream = PacketBufferStreamBuilder
                     .Create()
@@ -156,9 +142,8 @@ namespace Noise.Core.Client
                     .InsertPacket(discoveryPacket)
                     .Build();
 
-                Connect();
-                await SendAsync(bufferStream, cancellationToken);
-                
+                await HandleTransaction(bufferStream, cancellationToken);
+
                 _outputMonitor.WriteOutgoinDiscovery(_peerIp);
             }
             catch (PeerDataException ex)
@@ -169,26 +154,19 @@ namespace Noise.Core.Client
             {
                 _outputMonitor.LogError(ex);
             }
-            finally
-            {
-                Disconnect();
-            }
         }
 
         public async Task SendPing(CancellationToken cancellationToken = default)
         {
             try
             {
-                var packetHandlingService = new PacketHandlingService();
-
-                var pingPacket = packetHandlingService.CreatePingPacket();
+                var pingPacket = _packetHandlingService.CreatePingPacket();
 
                 var pingPacketBuffer = pingPacket.GetBytes();
 
                 _outputMonitor.WriteOutgoingPing(_peerIp);
 
-                Connect();
-                await SendAsync(pingPacketBuffer, cancellationToken);
+                await HandleTransaction(pingPacketBuffer, cancellationToken);
             }
             catch (PeerDataException ex)
             {
@@ -197,10 +175,6 @@ namespace Noise.Core.Client
             catch (Exception ex)
             {
                 _outputMonitor.LogError(ex);
-            }
-            finally
-            {
-                Disconnect();
             }
         }
 
@@ -247,6 +221,32 @@ namespace Noise.Core.Client
                 }
 
                 LogVerbose("Noise client disposed.");
+            }
+        }
+
+        private async Task HandleTransaction(byte[] dataBuffer, CancellationToken token = default)
+        {
+            try
+            {
+                Connect();
+
+                await SendAsync(dataBuffer, token);
+
+                LogVerbose("Transaction successful.");
+            }
+            catch (TimeoutException ex)
+            {
+                LogVerbose("Transaction failed.");
+                LogVerbose(ex.Message);
+            }
+            catch (Exception)
+            {
+                LogVerbose("Transaction failed.");
+                throw;
+            }
+            finally
+            {
+                Disconnect();
             }
         }
 
@@ -322,15 +322,17 @@ namespace Noise.Core.Client
             {
                 connectTokenSource.Cancel();
                 _tcpClient.Close();
+
+                if (_peerConfiguration.Preferences.UseEndpointAttemptFilter && _peerConfiguration.Preferences.TreatConnectionTimeoutAsOffline)
+                {
+                    LogVerbose($"Endpoint: {_peerIp} will be marked as a disconnected endpoint.");
+                    _peerConfiguration.SetEndpointAsDisconnected(_peerIp);
+                }
+
                 throw new TimeoutException($"Timeout connecting to {_peerIp}.");
             }
 
-            try
-            {
-                _networkStream = _tcpClient.GetStream();
-                _networkStream.ReadTimeout = _noiseClientConfiguration.ReadTimeoutMs;
-            }
-            catch (Exception)
+            if (!_tcpClient.Connected)
             {
                 if (_peerConfiguration.Preferences.UseEndpointAttemptFilter)
                 {
@@ -338,6 +340,17 @@ namespace Noise.Core.Client
                     _peerConfiguration.SetEndpointAsDisconnected(_peerIp);
                 }
 
+                throw new TimeoutException($"Endpoint {_peerIp} is offline.");
+            }
+
+            try
+            {
+                _networkStream = _tcpClient.GetStream();
+                _networkStream.ReadTimeout = _noiseClientConfiguration.ReadTimeoutMs;
+            }
+            catch (Exception ex)
+            {
+                LogVerbose($"Unexpected network stream error. {ex.Message}");
                 throw;
             }
 
@@ -349,7 +362,6 @@ namespace Noise.Core.Client
             if (!_isConnected)
             {
                 LogVerbose("The noise client has already disconnected from the peer.");
-                return;
             }
 
             LogVerbose($"Disconnecting from the peer ${_peerIp}");

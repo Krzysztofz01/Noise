@@ -6,7 +6,6 @@ using Noise.Host.Abstraction;
 using Noise.Host.Exceptions;
 using System;
 using System.Linq;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -68,6 +67,7 @@ namespace Noise.Host
                 case "PING": await ExecutePing(args, cancellationTokenSource); return;
                 case "ALIAS": ExecuteAlias(args); return;
                 case "INSERT": ExecuteInsert(args); return;
+                case "REMOVE": ExecuteRemove(args); return;
                 case "HELP": ExecuteHelp(); return;
                 case "SIGN": await ExecuteSign(args, cancellationTokenSource); return;
                 case "INFO": ExecuteInfo(); return;
@@ -96,43 +96,25 @@ namespace Noise.Host
             }
         }
 
-        public async Task RunStartupDiscovery(CancellationTokenSource cancellationTokenSource)
-        {
-            if (!_peerConfiguration.Preferences.BroadcastDiscoveryOnStartup) return;
-
-            try
-            {
-                _outputMonitor.LogInformation("Endpoint discovery broadcast started.");
-
-                foreach (var endpoint in _peerConfiguration.GetEndpoints(true))
-                {
-                    foreach (var peer in _peerConfiguration.GetPeers())
-                    {
-                        using var client = CreateClient(endpoint.Endpoint);
-                        await client.SendDiscovery(peer.PublicKey, cancellationTokenSource.Token);
-                    }
-                }
-
-                _outputMonitor.LogInformation("Endpoint discovery broadcast finished.");
-            }
-            catch (Exception ex)
-            {
-                _outputMonitor.LogWarning("Enpoint discovery broadcast failed.");
-
-                if (_peerConfiguration.Preferences.VerboseMode)
-                    _outputMonitor.LogError(ex);
-            }
-        }
-
         private void ExecuteBleach()
         {
             try
             {
+                if (!_peerConfiguration.Preferences.AllowPeerSignatureBleach)
+                {
+                    _outputMonitor.LogWarning("You can not bleach the signature with the AllowPeerSignatureBleach preference set to false");
+                    return;
+                }
+
                 if (selectedPeer is null)
                     throw new CommandHandlerException("No peer selected. Use the SELECT command or check all commands using HELP.");
 
                 selectedPeer.SetReceivingSignature(null);
-                selectedPeer.SetSendingSignature(null);
+
+                // Fix for the: [Unknown] Identity prove unexpected mismatch
+                // Reset only the receiving signature, beacuse the sending signature is changed during SIGN command
+                //
+                // selectedPeer.SetSendingSignature(null);
 
                 ((OutputMonitor)_outputMonitor).WriteRaw("Peer bleached successful.", ConsoleColor.Green);
             }
@@ -190,6 +172,9 @@ namespace Noise.Host
                 if (!_peerConfiguration.ApplyPreference(property, value))
                     throw new CommandHandlerException($"Failed to apply: {value} to: {property} option.");
 
+                if (PeerPreferences.IsDangerous(property))
+                    _outputMonitor.LogWarning($"Changing the option: {property} is dangerous and is not recommended.");
+
                 ((OutputMonitor)_outputMonitor).WriteRaw($"Successful applied: {value} to: {property} option.", ConsoleColor.Green);
             }
             catch (Exception ex)
@@ -221,7 +206,7 @@ namespace Noise.Host
 
                 bool overrite = args.Any(a => a.ToLower() == "overrite");
 
-                if (selectedPeer.SendingSignature is not null && !overrite)
+                if (_peerConfiguration.IsSendingSignatureDefinedForPeer(selectedPeer.PublicKey) && !overrite)
                     throw new CommandHandlerException($"This peer has a signature assigned.{Environment.NewLine}{usage}");
 
                 foreach (var endpoint in _peerConfiguration.GetEndpoints(true))
@@ -248,13 +233,15 @@ namespace Noise.Host
                 if (selectedPeer is null)
                     throw new CommandHandlerException("No peer selected. Use the SELECT command or check all commands using HELP.");
 
-                var messageStringBuilder = new StringBuilder(string.Empty);
-                foreach (var a in args) messageStringBuilder.Append(a);
+                var message = string.Join(' ', args).Trim();
+
+                if (string.IsNullOrEmpty(message))
+                    throw new CommandHandlerException(usage);
 
                 foreach (var endpoint in _peerConfiguration.GetEndpoints(true))
                 {
                     using var client = CreateClient(endpoint.Endpoint);
-                    await client.SendMessage(selectedPeer.PublicKey, messageStringBuilder.ToString(), cts.Token);
+                    await client.SendMessage(selectedPeer.PublicKey, message, cts.Token);
                 }
 
             }
@@ -281,18 +268,20 @@ namespace Noise.Host
                     foreach (var peer in _peerConfiguration.GetPeers())
                     {
                         string publicKey = fullPublicKey ? peer.PublicKey : peer.PublicKey[.._publicKeyStripLength];
-                        _outputMonitor.WriteRaw($"[{peer.Identifier}] {peer.Alias} - {publicKey}", true);
+                        string signingDetails = GetSignatureDetails(peer.PublicKey);
+
+                        _outputMonitor.WriteRaw($"[{peer.Identifier}] {peer.Alias} ({signingDetails}) - {publicKey}", true);
                     }
 
-                    _outputMonitor.LogInformation($"You can optionaly print the full public key.{Environment.NewLine}{usage}");
                     return;
                 }
 
                 if (type == "endpoint")
                 {
-                    foreach (var endpoint in _peerConfiguration.GetEndpoints(true))
+                    foreach (var endpoint in _peerConfiguration.GetEndpoints(false).OrderBy(e => e.IsConnected))
                     {
-                        _outputMonitor.WriteRaw(endpoint.Endpoint, true);
+                        var status = endpoint.IsConnected ? "Online" : "Offline";
+                        _outputMonitor.WriteRaw($"{endpoint.Endpoint} [{status}]", true);
                     }
 
                     return;
@@ -304,6 +293,17 @@ namespace Noise.Host
             {
                 throw new CommandHandlerException(ex.Message);
             }
+        }
+
+        private string GetSignatureDetails(string publicKey)
+        {
+            var receiving = _peerConfiguration.IsReceivingSignatureDefinedForPeer(publicKey);
+            var sending = _peerConfiguration.IsSendingSignatureDefinedForPeer(publicKey);
+
+            if (receiving && sending) return "Double-signed";
+            if (receiving && !sending) return "Receiving-signed";
+            if (!receiving && sending) return "Sending-signed";
+            return "Unsigned";
         }
 
         private void ExecuteReset()
@@ -395,6 +395,49 @@ namespace Noise.Host
             }
         }
 
+        public void ExecuteRemove(string[] args)
+        {
+            const string usage = "Usage: REMOVE <peer/endpoint> [peer_ordinal_number/endpoint]";
+
+            try
+            {
+                if (args.Length != 2)
+                    throw new CommandHandlerException(usage);
+
+                var type = args.First().ToLower();
+                var value = args.Last();
+
+                if (type == "peer")
+                {
+                    var ordinalNumber = Convert.ToInt32(value);
+                    var peer = _peerConfiguration.GetPeerByOrdinalNumberIdentifier(ordinalNumber);
+
+                    if (selectedPeer.PublicKey == peer.PublicKey)
+                    {
+                        selectedPeer = null;
+                        _outputMonitor.LogInformation("Selected peer is no longer available.");
+                    }
+
+                    _peerConfiguration.RemovePeer(peer.PublicKey);
+                    _outputMonitor.LogInformation("Peer with given public key removed successful.");
+                    return;
+                }
+
+                if (type == "endpoint")
+                {
+                    _peerConfiguration.RemoveEndpoint(value);
+                    _outputMonitor.LogInformation("Given endpoint removed successful.");
+                    return;
+                }
+
+                throw new CommandHandlerException(usage);
+            }
+            catch (Exception ex)
+            {
+                throw new CommandHandlerException(ex.Message);
+            }
+        }
+
         private void ExecuteHelp()
         {
             ((OutputMonitor)_outputMonitor).WriteRaw(Title.AsciiTitle, ConsoleColor.DarkGreen, false);
@@ -411,10 +454,16 @@ namespace Noise.Host
             ((OutputMonitor)_outputMonitor).WriteRaw("RESET - Reset selected peer.", ConsoleColor.Yellow);
             ((OutputMonitor)_outputMonitor).WriteRaw("SEND(:) - Send message to selected peer.", ConsoleColor.Yellow);
             ((OutputMonitor)_outputMonitor).WriteRaw("SIGN - Send signature to selected peer.", ConsoleColor.Yellow);
-            ((OutputMonitor)_outputMonitor).WriteRaw("BLEACH - Reset all signatures related to selected peer.", ConsoleColor.Yellow);
+
+            if (_peerConfiguration.Preferences.AllowPeerSignatureBleach)
+            {
+                ((OutputMonitor)_outputMonitor).WriteRaw("BLEACH - Reset the receiving signature related to the selected peer.", ConsoleColor.Yellow);
+            }
+            
             ((OutputMonitor)_outputMonitor).WriteRaw("PING - Send a ping packet to a certain endpoint.", ConsoleColor.Yellow);
             ((OutputMonitor)_outputMonitor).WriteRaw("ALIAS - Set alias to certain peer.", ConsoleColor.Yellow);
             ((OutputMonitor)_outputMonitor).WriteRaw("INSERT - Insert new peer key and optional alias or a endpoint.", ConsoleColor.Yellow);
+            ((OutputMonitor)_outputMonitor).WriteRaw("REMOVE - Remove a given peer key or a endpoint.", ConsoleColor.Yellow);
             ((OutputMonitor)_outputMonitor).WriteRaw("HELP - Show available commands.", ConsoleColor.Yellow);
             ((OutputMonitor)_outputMonitor).WriteRaw("INFO - Print information about local peer.", ConsoleColor.Yellow);
             ((OutputMonitor)_outputMonitor).WriteRaw("DISCOVER - Broadcast discovery packets to the network.", ConsoleColor.Yellow);

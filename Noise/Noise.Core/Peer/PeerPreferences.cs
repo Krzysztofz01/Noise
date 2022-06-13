@@ -25,6 +25,7 @@ namespace Noise.Core.Peer
         [ConfigurablePreference]
         public bool FixedPublicKeyValidationLength { get; private set; }
 
+        [Dangerous]
         [ConfigurablePreference]
         public int ServerStreamBufferSize { get; private set; }
 
@@ -52,6 +53,7 @@ namespace Noise.Core.Peer
         [ConfigurablePreference]
         public int ClientMaxConnectRetryCount { get; private set; }
 
+        [Dangerous]
         [ConfigurablePreference]
         public bool AllowHostVersionMismatch { get; private set; }
 
@@ -64,8 +66,30 @@ namespace Noise.Core.Peer
         [ConfigurablePreference]
         public bool AcceptPublicKeysViaDiscovery { get; private set; }
 
+        [Dangerous]
         [ConfigurablePreference]
         public bool AcceptUnpromptedConnectionEndpoints { get; private set; }
+
+        [Dangerous]
+        [ConfigurablePreference]
+        public bool EnableWindowsSpecificNatTraversal { get; private set; }
+
+        [ConfigurablePreference]
+        public bool BroadcastDiscoveryPeriodically { get; private set; }
+
+        [Dangerous]
+        [ConfigurablePreference]
+        public int PeriodicallyDiscoveryIntervalMinutes { get; private set; }
+
+        [Dangerous]
+        [ConfigurablePreference]
+        public bool ForceUpdate { get; private set; }
+
+        [ConfigurablePreference]
+        public bool TreatConnectionTimeoutAsOffline { get; private set; }
+
+        [ConfigurablePreference]
+        public bool AllowPeerSignatureBleach { get; private set; }
 
         public bool ApplyPreference(string name, string value)
         {
@@ -99,6 +123,15 @@ namespace Noise.Core.Peer
             }
         }
 
+        public static bool IsDangerous(string name)
+        {
+            return typeof(PeerPreferences)
+               .GetProperties()
+               .Where(p => p.CustomAttributes.Any(a => a.AttributeType == typeof(ConfigurablePreferenceAttribute)))
+               .Where(p => p.CustomAttributes.Any(a => a.AttributeType == typeof(DangerousAttribute)))
+               .Any(p => p.Name.ToLower() == name.ToLower());
+        }
+
         public IDictionary<string, string> GetPreferences()
         {
             return typeof(PeerPreferences)
@@ -130,7 +163,13 @@ namespace Noise.Core.Peer
                 BroadcastDiscoveryOnStartup = BroadcastDiscoveryOnStartup,
                 SharePublicKeysViaDiscovery = SharePublicKeysViaDiscovery,
                 AcceptPublicKeysViaDiscovery = AcceptPublicKeysViaDiscovery,
-                AcceptUnpromptedConnectionEndpoints = AcceptUnpromptedConnectionEndpoints
+                AcceptUnpromptedConnectionEndpoints = AcceptUnpromptedConnectionEndpoints,
+                EnableWindowsSpecificNatTraversal = EnableWindowsSpecificNatTraversal,
+                BroadcastDiscoveryPeriodically = BroadcastDiscoveryPeriodically,
+                PeriodicallyDiscoveryIntervalMinutes = PeriodicallyDiscoveryIntervalMinutes,
+                ForceUpdate = ForceUpdate,
+                TreatConnectionTimeoutAsOffline = TreatConnectionTimeoutAsOffline,
+                AllowPeerSignatureBleach = AllowPeerSignatureBleach
             };
         }
 
@@ -160,7 +199,13 @@ namespace Noise.Core.Peer
                     BroadcastDiscoveryOnStartup = true,
                     SharePublicKeysViaDiscovery = false,
                     AcceptPublicKeysViaDiscovery = false,
-                    AcceptUnpromptedConnectionEndpoints = true
+                    AcceptUnpromptedConnectionEndpoints = true,
+                    EnableWindowsSpecificNatTraversal = false,
+                    BroadcastDiscoveryPeriodically = true,
+                    PeriodicallyDiscoveryIntervalMinutes = 10,
+                    ForceUpdate = false,
+                    TreatConnectionTimeoutAsOffline = false,
+                    AllowPeerSignatureBleach = false
                 };
             }
 
@@ -189,7 +234,13 @@ namespace Noise.Core.Peer
                     BroadcastDiscoveryOnStartup = peerPreferences.BroadcastDiscoveryOnStartup ?? defaultPreferences.BroadcastDiscoveryOnStartup,
                     SharePublicKeysViaDiscovery = peerPreferences.SharePublicKeysViaDiscovery ?? defaultPreferences.SharePublicKeysViaDiscovery,
                     AcceptPublicKeysViaDiscovery = peerPreferences.AcceptPublicKeysViaDiscovery ?? defaultPreferences.AcceptPublicKeysViaDiscovery,
-                    AcceptUnpromptedConnectionEndpoints = peerPreferences.AcceptUnpromptedConnectionEndpoints ?? defaultPreferences.AcceptUnpromptedConnectionEndpoints
+                    AcceptUnpromptedConnectionEndpoints = peerPreferences.AcceptUnpromptedConnectionEndpoints ?? defaultPreferences.AcceptUnpromptedConnectionEndpoints,
+                    EnableWindowsSpecificNatTraversal = peerPreferences.EnableWindowsSpecificNatTraversal ?? defaultPreferences.EnableWindowsSpecificNatTraversal,
+                    BroadcastDiscoveryPeriodically = peerPreferences.BroadcastDiscoveryPeriodically ?? defaultPreferences.BroadcastDiscoveryPeriodically,
+                    PeriodicallyDiscoveryIntervalMinutes = peerPreferences.PeriodicallyDiscoveryIntervalMinutes ?? defaultPreferences.PeriodicallyDiscoveryIntervalMinutes,
+                    ForceUpdate = peerPreferences.ForceUpdate ?? defaultPreferences.ForceUpdate,
+                    TreatConnectionTimeoutAsOffline = peerPreferences.TreatConnectionTimeoutAsOffline ?? defaultPreferences.TreatConnectionTimeoutAsOffline,
+                    AllowPeerSignatureBleach = peerPreferences.AllowPeerSignatureBleach ?? defaultPreferences.AllowPeerSignatureBleach
                 };
             }
         }
@@ -197,4 +248,7 @@ namespace Noise.Core.Peer
 
     [AttributeUsage(AttributeTargets.Property)]
     internal class ConfigurablePreferenceAttribute : Attribute { }
+
+    [AttributeUsage(AttributeTargets.Property)]
+    internal class DangerousAttribute : Attribute { }
 }

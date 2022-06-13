@@ -22,5 +22,11 @@
         public bool? SharePublicKeysViaDiscovery { get; set; }
         public bool? AcceptPublicKeysViaDiscovery { get; set; }
         public bool? AcceptUnpromptedConnectionEndpoints { get; set; }
+        public bool? EnableWindowsSpecificNatTraversal { get; set; }
+        public bool? BroadcastDiscoveryPeriodically { get; set; }
+        public int? PeriodicallyDiscoveryIntervalMinutes { get; set; }
+        public bool? ForceUpdate { get; set; }
+        public bool? TreatConnectionTimeoutAsOffline { get; set; }
+        public bool? AllowPeerSignatureBleach { get; set; }
     }
 }

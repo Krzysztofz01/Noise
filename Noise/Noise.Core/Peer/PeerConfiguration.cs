@@ -27,6 +27,11 @@ namespace Noise.Core.Peer
             return _remotePeers.Max(p => p.Identifier) + 1;
         }
 
+        private static string SanitizeEndpointString(string endpoint)
+        {
+            return endpoint.Trim().Split(':').First();
+        }
+
         public IEnumerable<PeerEndpoint> GetEndpoints(bool onlyConnected = true)
         {
             if (!onlyConnected) return _peerEndpoints;
@@ -45,27 +50,43 @@ namespace Noise.Core.Peer
 
         public void InsertEndpoint(string endpoint)
         {
-            var peerEndpoint = PeerEndpoint.Factory.FromParameters(endpoint);
+            var clearedEndpoint = SanitizeEndpointString(endpoint);
+
+            var peerEndpoint = PeerEndpoint.Factory.FromParameters(clearedEndpoint);
 
             if (_peerEndpoints.Any(e => e.Endpoint == peerEndpoint.Endpoint)) return;
 
             _peerEndpoints.Add(peerEndpoint);
         }
 
+        public void RemoveEndpoint(string endpoint)
+        {
+            var clearedEndpoint = SanitizeEndpointString(endpoint);
+
+            var targetEndpoint = _peerEndpoints.SingleOrDefault(e => e.Endpoint == clearedEndpoint);
+            if (targetEndpoint is null) throw new PeerDataException(PeerDataProblemType.ENDPOINT_NOT_FOUND);
+
+            _peerEndpoints.Remove(targetEndpoint);
+        }
+
         public void SetEndpointAsDisconnected(string endpoint)
         {
-            if (!IsEndpointKnown(endpoint))
+            var clearedEndpoint = SanitizeEndpointString(endpoint);
+
+            if (!IsEndpointKnown(clearedEndpoint))
                 throw new PeerDataException(PeerDataProblemType.ENDPOINT_NOT_FOUND);
 
-            _peerEndpoints.Single(e => e.Endpoint == endpoint).SetDisconnected();
+            _peerEndpoints.Single(e => e.Endpoint == clearedEndpoint).SetDisconnected();
         }
 
         public void SetEndpointAsConnected(string endpoint)
         {
-            if (!IsEndpointKnown(endpoint))
+            var clearedEndpoint = SanitizeEndpointString(endpoint);
+
+            if (!IsEndpointKnown(clearedEndpoint))
                 throw new PeerDataException(PeerDataProblemType.ENDPOINT_NOT_FOUND);
 
-            _peerEndpoints.Single(e => e.Endpoint == endpoint).SetConnected();
+            _peerEndpoints.Single(e => e.Endpoint == clearedEndpoint).SetConnected();
         }
 
         public void InsertPeer(string publicKey, string receivingSignature = null, string alias = null)
@@ -89,6 +110,14 @@ namespace Noise.Core.Peer
                 throw new InvalidOperationException("Given alias is alredy is usage.");
 
             _remotePeers.Add(RemotePeer.Factory.FromParameters(publicKey, GenerateOrdinalNumberIdentifier(), receivingSignature, alias));
+        }
+
+        public void RemovePeer(string publicKey)
+        {
+            var peer = _remotePeers.SingleOrDefault(p => p.PublicKey == publicKey);
+            if (peer is null) throw new PeerDataException(PeerDataProblemType.PUBLIC_KEY_NOT_FOUND);
+
+            _remotePeers.Remove(peer);
         }
 
         public void InsertAlias(string publicKey, string alias)
@@ -131,8 +160,9 @@ namespace Noise.Core.Peer
 
         public bool IsEndpointKnown(string endpoint)
         {
-            string ipv4Address = endpoint.Split(':').First();
-            return _peerEndpoints.Any(e => e.Endpoint == ipv4Address);
+            var clearedEndpoint = SanitizeEndpointString(endpoint);
+
+            return _peerEndpoints.Any(e => e.Endpoint == clearedEndpoint);
         }
 
         public bool IsPeerKnown(string publicKey)
@@ -193,6 +223,54 @@ namespace Noise.Core.Peer
                 throw new PeerDataException(PeerDataProblemType.VERSION_MISMATCH);
 
             Version = hostVersion;
+        }
+
+        public string GetSendingSignatureForPeer(string publicKey)
+        {
+            var peer = _remotePeers.SingleOrDefault(p => p.PublicKey == publicKey) ??
+                throw new PeerDataException(PeerDataProblemType.PUBLIC_KEY_NOT_FOUND);
+
+            return peer.SendingSignature;
+        }
+
+        public string GetReceivingSignatureForPeer(string publicKey)
+        {
+            var peer = _remotePeers.SingleOrDefault(p => p.PublicKey == publicKey) ??
+                throw new PeerDataException(PeerDataProblemType.PUBLIC_KEY_NOT_FOUND);
+
+            return peer.ReceivingSignature;
+        }
+
+        public void SetSendingSignatureForPeer(string publicKey, string sendingSignature)
+        {
+            var peer = _remotePeers.SingleOrDefault(p => p.PublicKey == publicKey) ??
+                throw new PeerDataException(PeerDataProblemType.PUBLIC_KEY_NOT_FOUND);
+
+            peer.SetSendingSignature(sendingSignature);
+        }
+
+        public void SetReceivingSignatureForPeer(string publicKey, string receivingSignature)
+        {
+            var peer = _remotePeers.SingleOrDefault(p => p.PublicKey == publicKey) ??
+                throw new PeerDataException(PeerDataProblemType.PUBLIC_KEY_NOT_FOUND);
+
+            peer.SetReceivingSignature(receivingSignature);
+        }
+
+        public bool IsSendingSignatureDefinedForPeer(string publicKey)
+        {
+            var peer = _remotePeers.SingleOrDefault(p => p.PublicKey == publicKey) ??
+                throw new PeerDataException(PeerDataProblemType.PUBLIC_KEY_NOT_FOUND);
+
+            return peer.SendingSignature is not null;
+        }
+
+        public bool IsReceivingSignatureDefinedForPeer(string publicKey)
+        {
+            var peer = _remotePeers.SingleOrDefault(p => p.PublicKey == publicKey) ??
+                throw new PeerDataException(PeerDataProblemType.PUBLIC_KEY_NOT_FOUND);
+
+            return peer.ReceivingSignature is not null;
         }
 
         public string Serialize()

@@ -1,15 +1,9 @@
 using Noise.Core.Abstraction;
-using Noise.Core.Exceptions;
-using Noise.Core.Extensions;
-using Noise.Core.File;
 using Noise.Core.Peer;
-using Noise.Core.Protocol;
-using Noise.Core.Server;
 using Noise.Host.Abstraction;
 using Noise.Host.Exceptions;
 using Noise.Host.Modes;
 using System;
-using System.Threading;
 using System.Threading.Tasks;
 
 namespace Noise.Host
@@ -18,7 +12,6 @@ namespace Noise.Host
     {
         private const int SUCCESS = 0;
         private const int FAILURE = 1;
-        private const int _timeOffsetMs = 1500;
 
         public static IOutputMonitor OutputMonitor;
         public static ICommandHandler CommandHandler;
@@ -29,8 +22,7 @@ namespace Noise.Host
             try
             {
                 await InitializeServices();
-                var cts = new CancellationTokenSource();
-
+                
                 if (args.Length != 0)
                 {
                     if (args.FirstIs(ConfigMode.Command)) return await new ConfigMode(OutputMonitor, PeerConfiguration, CommandHandler)
@@ -41,44 +33,16 @@ namespace Noise.Host
 
                     if (args.FirstIs(ExportMode.Command)) return await new ExportMode(OutputMonitor, PeerConfiguration)
                             .Launch(args) ? SUCCESS : FAILURE;
+
+                    if (args.FirstIs(RelayMode.Command)) return await new RelayMode(OutputMonitor, PeerConfiguration)
+                            .Launch(args) ? SUCCESS : FAILURE;
+
+                    if (args.FirstIs(FetchMode.Command)) return await new FetchMode(OutputMonitor, PeerConfiguration)
+                            .Launch(args) ? SUCCESS : FAILURE;
                 }
 
-                using INoiseServer server = new NoiseServer(OutputMonitor, PeerConfiguration, GetNoiseServerConfiguration());
-                _ = Task.Run(async () => await server.StartAsync(cts.Token));
-
-                OutputMonitor.LogInformation("The Noise peer host started.");
-                Thread.Sleep(_timeOffsetMs);
-
-                await ((CommandHandler)CommandHandler).RunStartupDiscovery(cts);
-
-                ((OutputMonitor)OutputMonitor).WriteRaw("Spread the noise...", ConsoleColor.Yellow);
-                while (!cts.Token.IsCancellationRequested)
-                {
-                    try
-                    {
-                        CommandHandler.Prefix();
-
-                        string input = Console.ReadLine();
-                        if(!input.IsEmpty()) await CommandHandler.Execute(input, cts);
-                    }
-                    catch (CommandHandlerException ex)
-                    {
-                        OutputMonitor.LogError($"{Environment.NewLine}{ex.Message}");
-                    }
-                    catch (Exception ex)
-                    {
-                        OutputMonitor.LogError($"{Environment.NewLine}Unexpected failure.", ex);
-                        cts.Cancel();
-                    }
-                }
-
-                server.Stop();
-                Thread.Sleep(_timeOffsetMs);
-
-                await FileHandler.SavePeerConfigurationCipher(PeerConfiguration);
-                Thread.Sleep(_timeOffsetMs);
-
-                return SUCCESS;
+                return await new DefaultMode(OutputMonitor, PeerConfiguration, CommandHandler)
+                    .Launch(args) ? SUCCESS : FAILURE;
             }
             catch (Exception ex)
             {
@@ -91,63 +55,13 @@ namespace Noise.Host
         private async static Task InitializeServices()
         {
             OutputMonitor = new OutputMonitor();
+
+            var peerConfigurationImporter = new PeerConfigurationImporter(OutputMonitor);
             
-            string peerPassword = ConsoleUtility.ReadSecret("Peer password: ");
-            PeerConfiguration = await GetPeerConfiguration(peerPassword);
+            var peerConfigurationSecret = ConsoleUtility.ReadSecret("Peer password: ");
+            PeerConfiguration = await peerConfigurationImporter.ImportOrInitializePeerConfiguration(peerConfigurationSecret);
 
             CommandHandler = new CommandHandler(OutputMonitor, PeerConfiguration);
-        }
-
-        private async static Task<PeerConfiguration> GetPeerConfiguration(string peerPassword)
-        {
-            try
-            {
-                if (FileHandler.PeerConfigurationFileExists())
-                {
-                    var peerConfigurationCipher = FileHandler.GetPeerConfigurationCipher();
-
-                    var localPeerConfiguration = PeerEncryption.DecryptPeerConfiguration(peerConfigurationCipher, peerPassword) ??
-                        throw new PeerDataException(PeerDataProblemType.WRONG_PEER_SECRET);
-
-                    if (!localPeerConfiguration.IsVersionValid(Constants.Version))
-                        throw new InvalidOperationException($"Version mismatch detected. Peer: {localPeerConfiguration.Version ?? "Version undefined" }. Host: {Constants.Version}. You can enable the unsafe AllowHostVersionMismatch flag to proceed.");
-
-                    if (Constants.Version != localPeerConfiguration.Version)
-                    {
-                        OutputMonitor.LogInformation($"Peer version will be updated from { localPeerConfiguration.Version ?? "Version undefined"} to { Constants.Version }");
-                        localPeerConfiguration.UpdatePeerVersion(Constants.Version);
-                    }
-
-                    await FileHandler.SavePeerConfigurationCipher(localPeerConfiguration);
-
-                    return localPeerConfiguration;
-                }
-
-                OutputMonitor.LogInformation("No peer file found. New peer created with the provided password.");
-
-                var initializedPeerConfiguration = PeerConfiguration.Factory.Initialize(peerPassword, Constants.Version);
-
-                await FileHandler.SavePeerConfigurationCipher(initializedPeerConfiguration);
-
-                return initializedPeerConfiguration;
-            }
-            catch (Exception)
-            {
-                throw;
-            }
-        }
-
-        private static NoiseServerConfiguration GetNoiseServerConfiguration()
-        {
-            return new NoiseServerConfiguration
-            {
-                VerboseMode = PeerConfiguration.Preferences.VerboseMode,
-                StreamBufferSize = PeerConfiguration.Preferences.ServerStreamBufferSize,
-                EnableKeepAlive = PeerConfiguration.Preferences.ServerEnableKeepAlive,
-                KeepAliveInterval = PeerConfiguration.Preferences.ServerKeepAliveInterval,
-                KeepAliveTime = PeerConfiguration.Preferences.ServerKeepAliveTime,
-                KeepAliveRetryCount = PeerConfiguration.Preferences.ServerKeepAliveRetryCount
-            };
-        }
+        }    
     }
 }
