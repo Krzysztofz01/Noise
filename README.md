@@ -47,6 +47,8 @@ After running the program, we can use the ```help``` command, which will list al
 - SEND(or : symbol for short) - Send message to selected peer.
 - SIGN - Send signature to selected peer.
 - BLEACH - Reset all signatures related to selected peer.
+- REMOVE - Remove a given peer key or a endpoint.
+- DISCOVER - Broadcast discovery packets to the network.
 - PING - Send a ping packet to a certain endpoint.
 - ALIAS - Set alias to certain peer.
 - INSERT - Insert new peer key and optional alias or a endpoint.
@@ -56,11 +58,5 @@ After running the program, we can use the ```help``` command, which will list al
 ## Technological stack
 The application was developed using the open-source .NET Core technology. It has no third party dependencies. Only .NET standard libraries are used. Unit testing uses xUnit.
 
-## Roadmap
-Functionalities that need to be implemented or repaired:
-
-🔲 Advanced networking. UPnP support, NAT traversal/hole-punching
-
-🔲 Relay mode for host.
 
 The terminal promot is inspired by the computer found in the game Submchanie 4: The Lab by Mateusz Skutnik. In my opinion, one of the best series of Flash games.
