@@ -22,6 +22,8 @@ namespace Noise.Core.Abstraction
         void WriteOutgoingPing(string receiverEndpoint);
         void WriteIncomingDiscovery(string senderPublicKey, string senderAlias, string senderEndpoint);
         void WriteOutgoinDiscovery(string receiverEndpoint);
+        void WriteIncomingBroadcast(string message);
+        void WriteOutgoingBroadcast(string message);
 
         void WriteRaw(string content, bool newLine = true);
 
