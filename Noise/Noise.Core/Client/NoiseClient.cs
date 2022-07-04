@@ -182,6 +182,12 @@ namespace Noise.Core.Client
         {
             try
             {
+                if (!_peerConfiguration.Preferences.EnableBroadcastPacketSending)
+                {
+                    LogVerbose($"Can not send the broadcast due to the current peer configuration.");
+                    return;
+                }
+
                 var broadcastPacket = _packetHandlingService.CreateBroadcastPacket(message);
 
                 var broadcastPacketBuffer = broadcastPacket.GetBytes();
