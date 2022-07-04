@@ -14,6 +14,7 @@ namespace Noise.Host
         private const ConsoleColor _pingColor = ConsoleColor.DarkGreen;
         private const ConsoleColor _signatureColor = ConsoleColor.DarkGreen;
         private const ConsoleColor _discoveryColor = ConsoleColor.DarkGreen;
+        private const ConsoleColor _broadcastColor = ConsoleColor.DarkGreen;
 
         public void LogError(string message)
         {
@@ -173,6 +174,23 @@ namespace Noise.Host
         {
             Console.ForegroundColor = _discoveryColor;
             Console.WriteLine("(Discovery!@You): Discovery target: {0}//127.0.0.1", receiverEndpoint);
+            Console.ResetColor();
+        }
+
+        public void WriteIncomingBroadcast(string message, string senderEndpoint)
+        {
+            Console.ForegroundColor = _broadcastColor;
+            Console.WriteLine("(Broadcast!@): {0}//{1}",
+                message,
+                senderEndpoint);
+            Console.ResetColor();
+        }
+
+        public void WriteOutgoingBroadcast(string message)
+        {
+            Console.ForegroundColor = _broadcastColor;
+            Console.WriteLine("(Broadcast!@You): {0}//127.0.0.1",
+                message);
             Console.ResetColor();
         }
     }
