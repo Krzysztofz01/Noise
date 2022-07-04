@@ -91,6 +91,14 @@ namespace Noise.Core.Peer
         [ConfigurablePreference]
         public bool AllowPeerSignatureBleach { get; private set; }
 
+        [Dangerous]
+        [ConfigurablePreference]
+        public bool EnableBroadcastPacketSending { get; private set; }
+
+        [Dangerous]
+        [ConfigurablePreference]
+        public bool EnableBroadcastPacketReceiving { get; private set; }
+
         public bool ApplyPreference(string name, string value)
         {
             try
@@ -169,7 +177,9 @@ namespace Noise.Core.Peer
                 PeriodicallyDiscoveryIntervalMinutes = PeriodicallyDiscoveryIntervalMinutes,
                 ForceUpdate = ForceUpdate,
                 TreatConnectionTimeoutAsOffline = TreatConnectionTimeoutAsOffline,
-                AllowPeerSignatureBleach = AllowPeerSignatureBleach
+                AllowPeerSignatureBleach = AllowPeerSignatureBleach,
+                EnableBroadcastPacketSending = EnableBroadcastPacketSending,
+                EnableBroadcastPacketReceiving = EnableBroadcastPacketReceiving
             };
         }
 
@@ -205,7 +215,9 @@ namespace Noise.Core.Peer
                     PeriodicallyDiscoveryIntervalMinutes = 10,
                     ForceUpdate = false,
                     TreatConnectionTimeoutAsOffline = false,
-                    AllowPeerSignatureBleach = false
+                    AllowPeerSignatureBleach = false,
+                    EnableBroadcastPacketSending = false,
+                    EnableBroadcastPacketReceiving = false
                 };
             }
 
@@ -240,7 +252,9 @@ namespace Noise.Core.Peer
                     PeriodicallyDiscoveryIntervalMinutes = peerPreferences.PeriodicallyDiscoveryIntervalMinutes ?? defaultPreferences.PeriodicallyDiscoveryIntervalMinutes,
                     ForceUpdate = peerPreferences.ForceUpdate ?? defaultPreferences.ForceUpdate,
                     TreatConnectionTimeoutAsOffline = peerPreferences.TreatConnectionTimeoutAsOffline ?? defaultPreferences.TreatConnectionTimeoutAsOffline,
-                    AllowPeerSignatureBleach = peerPreferences.AllowPeerSignatureBleach ?? defaultPreferences.AllowPeerSignatureBleach
+                    AllowPeerSignatureBleach = peerPreferences.AllowPeerSignatureBleach ?? defaultPreferences.AllowPeerSignatureBleach,
+                    EnableBroadcastPacketSending = peerPreferences.EnableBroadcastPacketSending ?? defaultPreferences.EnableBroadcastPacketSending,
+                    EnableBroadcastPacketReceiving = peerPreferences.EnableBroadcastPacketReceiving ?? defaultPreferences.EnableBroadcastPacketReceiving
                 };
             }
         }
