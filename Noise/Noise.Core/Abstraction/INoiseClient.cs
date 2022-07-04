@@ -10,5 +10,6 @@ namespace Noise.Core.Abstraction
         Task SendSignature(string receiverPublicKey, CancellationToken cancellationToken = default);
         Task SendDiscovery(string receiverPublicKey, CancellationToken cancellationToken = default);
         Task SendPing(CancellationToken cancellationToken = default);
+        Task SendBroadcast(string message, CancellationToken cancellationToken = default);
     }
 }
