@@ -9,6 +9,7 @@ namespace Noise.Core.Protocol
         DISCOVERY_FORWARD = 2,
         SIGNATURE = 3,
         MESSAGE = 4,
-        KEY = 5
+        KEY = 5,
+        BROADCAST = 6
     }
 }
