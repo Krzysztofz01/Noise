@@ -53,7 +53,8 @@ After running the program, we can use the ```help``` command, which will list al
 - ALIAS - Set alias to certain peer.
 - INSERT - Insert new peer key and optional alias or a endpoint.
 - HELP - Show available commands.
-- INFO - Print information about local peer.          
+- INFO - Print information about local peer.
+- BROADCAST - Send a unencrypted messages to all known endpoints.
 
 ## Technological stack
 The application was developed using the open-source .NET Core technology. It has no third party dependencies. Only .NET standard libraries are used. Unit testing uses xUnit.
