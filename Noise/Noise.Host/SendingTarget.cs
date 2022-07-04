@@ -12,6 +12,8 @@ namespace Noise.Host
 
         public void AddPeer(RemotePeer peer)
         {
+            if (_selectedPeers.Any(p => p.PublicKey == peer.PublicKey)) return;
+
             _selectedPeers.Add(peer);
         }
 
@@ -41,7 +43,7 @@ namespace Noise.Host
             return _selectedPeers.Count > 0;
         }
 
-        public string GetPrefix()
+        public string GetTargetPrefix()
         {
             if (!IsSelected())
                 throw new InvalidOperationException("There must a at least one peer selected to use this method.");
@@ -56,6 +58,11 @@ namespace Noise.Host
             }
 
             return $"Group({_selectedPeers.Count})";
+        }
+
+        public void Reset()
+        {
+            Initialize();
         }
 
         private void Initialize()
