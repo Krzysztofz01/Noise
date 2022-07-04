@@ -95,7 +95,7 @@ namespace Noise.Core.Server
 
                 var broadcastMessage = packetHandlingService.ReceiveBroadcast(e.PacketBufferQueue);
 
-                _outputMonitor.WriteIncomingBroadcast(broadcastMessage);
+                _outputMonitor.WriteIncomingBroadcast(broadcastMessage, senderEndpoint);
             }
             catch (Exception ex)
             {
