@@ -12,7 +12,7 @@ namespace Noise.Core.Protocol
             var signatureBuffer = new byte[_signatureBufferSize];
             RandomNumberGenerator.Fill(signatureBuffer);
 
-            return SHA1HashingHandler.HashToBase64(signatureBuffer);
+            return SHA512HashingHandler.HashToBase64(signatureBuffer);
         }
     }
 }

@@ -5,6 +5,7 @@ using Noise.Core.Protocol;
 using Noise.Host.Abstraction;
 using Noise.Host.Exceptions;
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -19,7 +20,7 @@ namespace Noise.Host
         private readonly IOutputMonitor _outputMonitor;
         private readonly PeerConfiguration _peerConfiguration;
 
-        private RemotePeer selectedPeer = null;
+        private readonly SendingTarget _sendingTarget = new SendingTarget();
 
         private CommandHandler() { }
         public CommandHandler(IOutputMonitor outputMonitor, PeerConfiguration peerConfiguration)
@@ -33,17 +34,13 @@ namespace Noise.Host
 
         public void Prefix()
         {
-            if (selectedPeer is null)
+            if (!_sendingTarget.IsSelected())
             {
                 _outputMonitor.WriteRaw(_defaultPrompt, false);
                 return;
             }
 
-            var peerName = selectedPeer.Alias != "Anonymous"
-                ? selectedPeer.Alias
-                : selectedPeer.PublicKey[.._publicKeyStripLength];
-
-            _outputMonitor.WriteRaw($"({peerName}) {_defaultPrompt}", false);
+            _outputMonitor.WriteRaw($"({_sendingTarget.GetTargetPrefix()}) {_defaultPrompt}", false);
         }
 
         public async Task Execute(string command, CancellationTokenSource cancellationTokenSource)
@@ -139,8 +136,13 @@ namespace Noise.Host
                     return;
                 }
 
-                if (selectedPeer is null)
+                if (!_sendingTarget.IsSelected())
                     throw new CommandHandlerException("No peer selected. Use the SELECT command or check all commands using HELP.");
+
+                if (_sendingTarget.IsGroup())
+                    throw new CommandHandlerException("This operation can not be performed on a group of peers.");
+
+                var selectedPeer = _sendingTarget.GetTarget();
 
                 selectedPeer.SetReceivingSignature(null);
 
@@ -234,8 +236,13 @@ namespace Noise.Host
 
             try
             {
-                if (selectedPeer is null)
+                if (!_sendingTarget.IsSelected())
                     throw new CommandHandlerException("No peer selected. Use the SELECT command or check all commands using HELP.");
+
+                if (_sendingTarget.IsGroup())
+                    throw new CommandHandlerException("This operation can not be performed on a group of peers.");
+
+                var selectedPeer = _sendingTarget.GetTarget();
 
                 bool overrite = args.Any(a => a.ToLower() == "overrite");
 
@@ -263,7 +270,7 @@ namespace Noise.Host
                 if (args.Length == 0)
                     throw new CommandHandlerException(usage);
 
-                if (selectedPeer is null)
+                if (!_sendingTarget.IsSelected())
                     throw new CommandHandlerException("No peer selected. Use the SELECT command or check all commands using HELP.");
 
                 var message = string.Join(' ', args).Trim();
@@ -271,10 +278,17 @@ namespace Noise.Host
                 if (string.IsNullOrEmpty(message))
                     throw new CommandHandlerException(usage);
 
-                foreach (var endpoint in _peerConfiguration.GetEndpoints(true))
+                var messageTargets = _sendingTarget.IsGroup()
+                    ? _sendingTarget.GetTargets()
+                    : new List<RemotePeer> { _sendingTarget.GetTarget() };
+
+                foreach (var target in messageTargets)
                 {
-                    using var client = CreateClient(endpoint.Endpoint);
-                    await client.SendMessage(selectedPeer.PublicKey, message, cts.Token);
+                    foreach (var endpoint in _peerConfiguration.GetEndpoints(true))
+                    {
+                        using var client = CreateClient(endpoint.Endpoint);
+                        await client.SendMessage(target.PublicKey, message, cts.Token);
+                    }
                 }
 
             }
@@ -341,7 +355,7 @@ namespace Noise.Host
 
         private void ExecuteReset()
         {
-            selectedPeer = null;
+            _sendingTarget.Reset();
 
             _outputMonitor.LogInformation("Selected peer reseted.");
         }
@@ -352,18 +366,45 @@ namespace Noise.Host
 
             try
             {
-                if (args.Length != 1)
+                if (args.Length > 1)
                     throw new CommandHandlerException(usage);
+
+                if (args.Length == 0)
+                {
+                    if (!_sendingTarget.IsGroup())
+                    {
+                        _outputMonitor.LogInformation("Use this command to list target group. A single peer is currently selected.");
+                        return;
+                    }
+
+                    var peerNames = _sendingTarget.GetTargets()
+                        .Select(p => p.Alias != "Anonymous" ? p.Alias : p.PublicKey[.._publicKeyStripLength]);
+
+                    foreach (var name in peerNames)
+                        _outputMonitor.WriteRaw($"- {name}");
+
+                    return;
+                }
 
                 var ordinalNumber = Convert.ToInt32(args.Single());
 
-                selectedPeer = _peerConfiguration.GetPeerByOrdinalNumberIdentifier(ordinalNumber);
+                var selectedPeer = _peerConfiguration.GetPeerByOrdinalNumberIdentifier(ordinalNumber);
+
+                _sendingTarget.AddPeer(selectedPeer);
 
                 var peerName = selectedPeer.Alias != "Anonymous"
                     ? selectedPeer.Alias
                     : selectedPeer.PublicKey[.._publicKeyStripLength];
 
-                _outputMonitor.LogInformation($"Peer: {peerName} selected.");
+                if (_sendingTarget.IsGroup())
+                {
+                    var groupCount = _sendingTarget.GetTargets().Count();
+                    _outputMonitor.LogInformation($"Peer: {peerName} selected. Total group of {groupCount} peers.");
+                }
+                else
+                {
+                    _outputMonitor.LogInformation($"Peer: {peerName} selected.");
+                }
             }
             catch (Exception ex)
             {
@@ -445,10 +486,16 @@ namespace Noise.Host
                     var ordinalNumber = Convert.ToInt32(value);
                     var peer = _peerConfiguration.GetPeerByOrdinalNumberIdentifier(ordinalNumber);
 
-                    if (selectedPeer.PublicKey == peer.PublicKey)
+                    if (_sendingTarget.IsSelected())
                     {
-                        selectedPeer = null;
-                        _outputMonitor.LogInformation("Selected peer is no longer available.");
+                        var isSingleSelected = !_sendingTarget.IsGroup() && _sendingTarget.GetTarget().PublicKey == peer.PublicKey;
+                        var isInGroupSelected = _sendingTarget.IsGroup() && _sendingTarget.GetTargets().Any(p => p.PublicKey == peer.PublicKey);
+
+                        if (isSingleSelected || isInGroupSelected)
+                        {
+                            _sendingTarget.Reset();
+                            _outputMonitor.LogInformation("Selected peer is no longer available.");
+                        }
                     }
 
                     _peerConfiguration.RemovePeer(peer.PublicKey);
