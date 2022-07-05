@@ -20,7 +20,6 @@ namespace Noise.Host
         private readonly IOutputMonitor _outputMonitor;
         private readonly PeerConfiguration _peerConfiguration;
 
-        //private RemotePeer selectedPeer = null;
         private readonly SendingTarget _sendingTarget = new SendingTarget();
 
         private CommandHandler() { }
@@ -456,15 +455,10 @@ namespace Noise.Host
 
                     if (_sendingTarget.IsSelected())
                     {
-                        //TODO: Test if the expression eval is working the same way like in C++
-                        if (_sendingTarget.IsGroup() && _sendingTarget.GetTargets().Any(p => p.PublicKey == peer.PublicKey))
-                        {
-                            _sendingTarget.Reset();
-                            _outputMonitor.LogInformation("Selected peer is no longer available.");
-                        }
+                        var isSingleSelected = !_sendingTarget.IsGroup() && _sendingTarget.GetTarget().PublicKey == peer.PublicKey;
+                        var isInGroupSelected = _sendingTarget.IsGroup() && _sendingTarget.GetTargets().Any(p => p.PublicKey == peer.PublicKey);
 
-                        //TODO: Test if the expression eval is working the same way like in C++
-                        if (!_sendingTarget.IsGroup() && _sendingTarget.GetTarget().PublicKey == peer.PublicKey)
+                        if (isSingleSelected || isInGroupSelected)
                         {
                             _sendingTarget.Reset();
                             _outputMonitor.LogInformation("Selected peer is no longer available.");
