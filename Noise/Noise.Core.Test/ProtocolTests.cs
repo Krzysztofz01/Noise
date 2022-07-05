@@ -46,6 +46,28 @@ namespace Noise.Core.Test
         }
 
         [Fact]
+        public void PacketWithBroadcastPayloadShouldCreateSerializeAndDeserialize()
+        {
+            var broadcastMessage = "Hello World!";
+
+            var payload = BroadcastPayload.Factory.Create(broadcastMessage);
+            var packet = Packet<BroadcastPayload>.Factory.FromPayload(payload);
+
+            Assert.NotNull(packet);
+
+            var packetBuffer = packet.GetBytes();
+            var packetDeserialized = Packet.Factory.FromBuffer<BroadcastPayload>(packetBuffer);
+
+            Assert.NotNull(packetDeserialized);
+            Assert.Equal(packet, packetDeserialized);
+
+            var payloadDeserialized = packetDeserialized.PeekPayload;
+
+            Assert.Equal(payload.Serialize(), payloadDeserialized.Serialize());
+            Assert.Equal(broadcastMessage, payloadDeserialized.MessageContent);
+        }
+
+        [Fact]
         public void PacketWithSignaturePayloadShouldCreateSerializeAndDeserialize()
         {
             string key = Guid.NewGuid().ToString();
@@ -354,6 +376,19 @@ namespace Noise.Core.Test
             var pingPacket = phs.CreatePingPacket();
 
             Assert.NotNull(pingPacket);
+        }
+
+        [Fact]
+        public void PacketHandlingServiceShouldHandleBroadcastPackets()
+        {
+            var phs = new PacketHandlingService();
+
+            var message = "Hello World!";
+            var broadcastPacket = phs.CreateBroadcastPacket(message);
+
+            var receivedMessage = phs.ReceiveBroadcast(broadcastPacket.GetBytes());
+
+            Assert.Equal(message, receivedMessage);
         }
 
         [Fact]

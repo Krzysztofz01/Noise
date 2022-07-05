@@ -28,5 +28,7 @@
         public bool? ForceUpdate { get; set; }
         public bool? TreatConnectionTimeoutAsOffline { get; set; }
         public bool? AllowPeerSignatureBleach { get; set; }
+        public bool? EnableBroadcastPacketSending { get; set; }
+        public bool? EnableBroadcastPacketReceiving { get; set; }
     }
 }

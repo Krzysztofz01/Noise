@@ -69,8 +69,41 @@ namespace Noise.Host
                 case "SIGN": await ExecuteSign(args, cancellationTokenSource); return;
                 case "INFO": ExecuteInfo(); return;
                 case "DISCOVER": await ExecuteDiscover(cancellationTokenSource); return;
+                case "BROADCAST": await ExecuteBroadcast(args, cancellationTokenSource); return;
 
                 default: throw new CommandHandlerException("Invalid command. Use the HELP command for further information.");
+            }
+        }
+
+        private async Task ExecuteBroadcast(string[] args, CancellationTokenSource cancellationTokenSource)
+        {
+            const string usage = "Usage: BROADCAST [message]";
+
+            try
+            {
+                if (!_peerConfiguration.Preferences.EnableBroadcastPacketSending)
+                {
+                    _outputMonitor.LogWarning("You can not send broadcast messages with the EnableBroadcastPacketSending preference set to false");
+                    return;
+                }
+
+                if (args.Length == 0)
+                    throw new CommandHandlerException(usage);
+
+                var message = string.Join(' ', args).Trim();
+
+                if (string.IsNullOrEmpty(message))
+                    throw new CommandHandlerException(usage);
+
+                foreach (var endpoint in _peerConfiguration.GetEndpoints(true))
+                {
+                    using var client = CreateClient(endpoint.Endpoint);
+                    await client.SendBroadcast(message, cancellationTokenSource.Token);
+                }
+            }
+            catch (Exception ex)
+            {
+                throw new CommandHandlerException(ex.Message);
             }
         }
 
@@ -514,6 +547,11 @@ namespace Noise.Host
             ((OutputMonitor)_outputMonitor).WriteRaw("HELP - Show available commands.", ConsoleColor.Yellow);
             ((OutputMonitor)_outputMonitor).WriteRaw("INFO - Print information about local peer.", ConsoleColor.Yellow);
             ((OutputMonitor)_outputMonitor).WriteRaw("DISCOVER - Broadcast discovery packets to the network.", ConsoleColor.Yellow);
+
+            if (_peerConfiguration.Preferences.EnableBroadcastPacketSending)
+            {
+                ((OutputMonitor)_outputMonitor).WriteRaw("BROADCAST - Send a unencrypted messages to all known endpoints.", ConsoleColor.Yellow);
+            }
         }
 
         private void ExecuteClear()

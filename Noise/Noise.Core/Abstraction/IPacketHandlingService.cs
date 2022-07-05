@@ -14,5 +14,8 @@ namespace Noise.Core.Abstraction
         (IEnumerable<string> endpoints, IEnumerable<string> publicKeys, string senderIdentityProve) ReceiveDiscoveryCollections(byte[] keyPacketBuffer, byte[] discoveryPacketBuffer, string receiverPrivateKey);
 
         IPacket CreatePingPacket();
+
+        IPacket CreateBroadcastPacket(string message);
+        string ReceiveBroadcast(byte[] broadcastPacketBuffer);
     }
 }

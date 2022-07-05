@@ -27,6 +27,7 @@ namespace Noise.Core.Server
         public event EventHandler<PeerDisconnectedEventArgs> OnPeerDisconnected;
         public event EventHandler<PingReceivedEventArgs> OnPingReceived;
         public event EventHandler<SignatureReceivedEventArgs> OnSignatureReceived;
+        public event EventHandler<BroadcastReceivedEventArgs> OnBroadcastRecevied;
 
         private readonly ConcurrentDictionary<string, PeerMetadata> _peers;
         private readonly ConcurrentDictionary<string, DateTime> _peersLastSeen;
@@ -56,6 +57,7 @@ namespace Noise.Core.Server
             OnPeerDisconnected += PeerDisconnectedEventHandler;
             OnPingReceived += PingReceivedEventHandler;
             OnSignatureReceived += SignatureReceivedEventHandler;
+            OnSignatureReceived += BroadcastRedeivedEventHandler;
 
             _peers = new ConcurrentDictionary<string, PeerMetadata>();
             _peersLastSeen = new ConcurrentDictionary<string, DateTime>();
@@ -74,6 +76,31 @@ namespace Noise.Core.Server
 
             if (_peerConfiguration.Preferences.UseEndpointAttemptFilter && isEndpointKnown)
                 _peerConfiguration.SetEndpointAsConnected(senderEndpoint);
+        }
+
+        private void BroadcastRedeivedEventHandler(object sender, SignatureReceivedEventArgs e)
+        {
+            try
+            {
+                var senderEndpoint = e.PeerEndpoint;
+                LogVerbose($"Server received broadcast packets from peer: {senderEndpoint}");
+
+                if (!_peerConfiguration.Preferences.EnableBroadcastPacketReceiving)
+                {
+                    LogVerbose($"Incoming broadcast dropped due to the current peer configuration.");
+                    return;
+                }
+
+                var packetHandlingService = new PacketHandlingService();
+
+                var broadcastMessage = packetHandlingService.ReceiveBroadcast(e.PacketBufferQueue);
+
+                _outputMonitor.WriteIncomingBroadcast(broadcastMessage, senderEndpoint);
+            }
+            catch (Exception ex)
+            {
+                LogVerbose($"Unexpected exception while receiving signature packets. {ex.Message}");
+            }
         }
 
         private void SignatureReceivedEventHandler(object sender, SignatureReceivedEventArgs e)
@@ -441,6 +468,7 @@ namespace Noise.Core.Server
                                 case PacketType.DISCOVERY: OnDiscoveryReceived?.Invoke(this, new DiscoveryReceivedEventArgs(dataBuffer, ipPort)); break;
                                 case PacketType.SIGNATURE: OnSignatureReceived?.Invoke(this, new SignatureReceivedEventArgs(dataBuffer, ipPort)); break;
                                 case PacketType.PING: OnPingReceived?.Invoke(this, new PingReceivedEventArgs(ipPort)); break;
+                                case PacketType.BROADCAST: OnBroadcastRecevied?.Invoke(this, new BroadcastReceivedEventArgs(dataBuffer, ipPort)); break;
 
                                 default: throw new ArgumentException("Invalid packet type. No handler defined.");
                             }

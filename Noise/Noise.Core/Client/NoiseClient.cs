@@ -178,6 +178,34 @@ namespace Noise.Core.Client
             }
         }
 
+        public async Task SendBroadcast(string message, CancellationToken cancellationToken = default)
+        {
+            try
+            {
+                if (!_peerConfiguration.Preferences.EnableBroadcastPacketSending)
+                {
+                    LogVerbose($"Can not send the broadcast due to the current peer configuration.");
+                    return;
+                }
+
+                var broadcastPacket = _packetHandlingService.CreateBroadcastPacket(message);
+
+                var broadcastPacketBuffer = broadcastPacket.GetBytes();
+
+                await HandleTransaction(broadcastPacketBuffer, cancellationToken);
+
+                _outputMonitor.WriteOutgoingBroadcast(message);
+            }
+            catch (PeerDataException ex)
+            {
+                LogVerbose(ex.Message);
+            }
+            catch (Exception ex)
+            {
+                _outputMonitor.LogError(ex);
+            }
+        }
+
         public void Dispose()
         {
             Dispose(true);

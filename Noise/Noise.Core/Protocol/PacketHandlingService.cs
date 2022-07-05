@@ -10,6 +10,14 @@ namespace Noise.Core.Protocol
 {
     public class PacketHandlingService : IPacketHandlingService
     {
+        public IPacket CreateBroadcastPacket(string message)
+        {
+            var broadcastPayload = BroadcastPayload.Factory.Create(message);
+            var broadcastPacket = Packet<BroadcastPayload>.Factory.FromPayload(broadcastPayload);
+
+            return broadcastPacket;
+        }
+
         public (IPacket keyPacket, IPacket discoveryPacket) CreateDiscoveryPackets(string senderIdentityProve, string receiverPublicKey, IEnumerable<string> endpoints, IEnumerable<string> publicKeys)
         {
             var serializedEndpoints = JsonSerializer.Serialize(endpoints);
@@ -79,6 +87,13 @@ namespace Noise.Core.Protocol
             var keyPacket = Packet<KeyPayload>.Factory.FromPayload(keyPayload);
 
             return (keyPacket, signaturePacket, signature);
+        }
+
+        public string ReceiveBroadcast(byte[] broadcastPacketBuffer)
+        {
+            var broadcastPayload = Packet.Factory.FromBuffer<BroadcastPayload>(broadcastPacketBuffer).PeekPayload;
+
+            return broadcastPayload.MessageContent;
         }
 
         public (IEnumerable<string> endpoints, IEnumerable<string> publicKeys, string senderIdentityProve) ReceiveDiscoveryCollections(byte[] keyPacketBuffer, byte[] discoveryPacketBuffer, string receiverPrivateKey)
