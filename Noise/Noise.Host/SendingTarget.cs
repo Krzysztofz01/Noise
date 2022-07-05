@@ -57,7 +57,7 @@ namespace Noise.Host
                     : selectedPeer.PublicKey[.._publicKeyStripLength];
             }
 
-            return $"Group({_selectedPeers.Count})";
+            return $"Group[{_selectedPeers.Count}]";
         }
 
         public void Reset()

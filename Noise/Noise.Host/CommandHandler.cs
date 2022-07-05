@@ -341,7 +341,7 @@ namespace Noise.Host
                 {
                     if (!_sendingTarget.IsGroup())
                     {
-                        _outputMonitor.LogInformation("Use this command to list target group. A ssingle peer is currently selected.");
+                        _outputMonitor.LogInformation("Use this command to list target group. A single peer is currently selected.");
                         return;
                     }
 
